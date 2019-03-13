@@ -5,16 +5,43 @@ Sub Step1()
     Dim plObjs() As AcadEntity
     Dim ddd() As Double
     
+    Dim ent As AcadEntity
+    Dim ent2 As AcadEntity
+    
+    Dim vx, vy As Double
+    Dim count As Integer
+    
     plroad = selectPolylineObs
     arcObjs = selectArcObs
     
     plObjs = arc2lines(arcObjs)
+    'ddd = plObjs(0).Coordinates
+    
+    
+    For i = 0 To UBound(plroad)
+        Set ent = plroad(i)
+        For j = 0 To UBound(plObjs)
+        
+            Set ent2 = plObjs(j)
+            ddd = ent2.Coordinates
+            
+            count = UBound(ddd)
+            
+            vx = ddd(count - 1)
+            vy = ddd(count)
+            
+            addVertex ent, vx, vy
+            
+            vx = ddd(0)
+            vy = ddd(1)
+        
+            addVertex ent, vx, vy
+        
+        Next
+    Next
     
     
     
-    
-    
-    ddd = plObjs(0).Coordinates
     
     Debug.Print " "
     
@@ -89,7 +116,115 @@ Function selectPolylineObs() As AcadEntity()
 
 End Function
 
+Function addVertex(ent As AcadEntity, ByVal vx As Double, ByVal vy As Double)
 
+    Dim newv(0 To 1) As Double
+    Dim ddd() As Double
+    Dim count As Integer
+    'Dim distance As Double
+
+    'vx = 1194.35534891423
+    'vy = 2999.85414787302
+    newv(0) = vx: newv(1) = vy
+    
+    'addDonut vx, vy
+    ddd = ent.Coordinates
+    count = UBound(ddd)
+    
+    x1 = ddd(count - 1)
+    y1 = ddd(count)
+    
+    For ii = 0 To count Step 2
+    
+        x2 = ddd(ii)
+        y2 = ddd(ii + 1)
+        
+        
+        If x1 = x2 Then
+            Debug.Print " "
+            
+        End If
+        
+        f = (y2 - y1) / (x2 - x1)
+        
+        f1 = (vy - y1) / (vx - x1)
+        f2 = (y2 - vy) / (x2 - vx)
+        
+         
+         
+        fd = XYDistance(x1, y1, x2, y2)
+        fd1 = XYDistance(x1, y1, vx, vy) + XYDistance(x2, y2, vx, vy)
+        
+
+        
+        If Abs(f1 - f2) < 0.00001 And Abs(fd - fd1) < 0.00001 Then
+            
+            addDonut x2, y2
+            addDonut x1, y1
+            
+            ent.addVertex ii / 2, newv
+            ent.Update
+        
+        End If
+        
+        x1 = x2
+        y1 = y2
+        
+    Next ii
+    
+    
+    
+    
+    Debug.Print " "
+End Function
+
+Function XYDistance(ByVal x1 As Double, ByVal y1 As Double, ByVal x2 As Double, ByVal y2 As Double) As Double
+
+  'Returns the distance between two points
+
+  Dim dblDist As Double
+
+  Dim dblXSl As Double
+
+  Dim dblYSl As Double
+
+  Dim varErr As Variant
+
+  On Error GoTo Err_Control
+
+  'Calc distance
+
+  dblXSl = (x1 - x2) ^ 2
+
+  dblYSl = (y1 - y2) ^ 2
+
+  dblDist = Sqr(dblXSl + dblYSl)
+
+  'Return Distance
+
+  XYDistance = dblDist
+
+Exit_Here:
+
+  Exit Function
+
+Err_Control:
+
+  Select Case Err.Number
+
+  'Add additional Case selections here
+
+    Case Else
+
+    MsgBox Err.Description
+
+    Err.Clear
+
+    Resume Exit_Here
+
+  End Select
+
+End Function
 
 Sub SelectRawData()
     Dim i, ii, x, y As Integer
@@ -156,7 +291,7 @@ Sub SelectRawData()
                 addDonut x2, y2
                 addDonut x1, y1
                 
-                selObj(i).AddVertex ii / 2, newv
+                selObj(i).addVertex ii / 2, newv
                 selObj(i).Update
             
             End If
