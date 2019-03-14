@@ -13,7 +13,15 @@ Sub Step1()
     
     Dim filletpoint(0 To 7) As Double   '8
     
-    Dim plout As AcadEntity
+    Dim dout1() As Double
+    Dim dout2() As Double
+    
+    Dim df1() As Double
+    Dim df2() As Double
+    
+    Dim dresult() As Double
+    Dim plResult As AcadLWPolyline
+    
     
     
     plroad = selectPolylineObs
@@ -67,32 +75,112 @@ Sub Step1()
     
     
     
-    Set plout = searchOutLine(plroad(0), plObjs(0), plObjs(1))
+    dout1 = searchOutLine(plroad(0), plObjs(0), plObjs(1))
     
+    ThisDrawing.ModelSpace.AddLightWeightPolyline (dout1)
     
+    dout2 = searchInnerLine(plroad(1), plObjs(0), plObjs(1))
     
-    
+    ThisDrawing.ModelSpace.AddLightWeightPolyline (dout2)
     Debug.Print " "
+    
+    Set ent = plObjs(0)
+    df1 = ent.Coordinates
+    Set ent = plObjs(1)
+    df2 = ent.Coordinates
+    
+    dresult = mergeAll(dout1, df1, dout2, df2)
+    
+    
+    Set plResult = ThisDrawing.ModelSpace.AddLightWeightPolyline(dresult)
+    plResult.Closed = True
+    plResult.Update
+    
     
     
 End Sub
 
+Function mergeAll(d1() As Double, d2() As Double, d3() As Double, d4() As Double) As Double()
 
-Function searchInnerLine(plobj As AcadEntity, f1obj As AcadEntity, f2obj As AcadEntity) As AcadEntity
-    Set searchInnerLine = searchCrossLine(plobj, f1obj, f2obj, True)
-End Function
-
-Function searchOutLine(plobj As AcadEntity, f1obj As AcadEntity, f2obj As AcadEntity) As AcadEntity
-
-    Set searchOutLine = searchCrossLine(plobj, f1obj, f2obj, False)
-
-End Function
-
-
-Function searchCrossLine(plobj As AcadEntity, f1obj As AcadEntity, f2obj As AcadEntity, isinner As Boolean) As AcadEntity
-
-    Dim ret As AcadLWPolyline
+    Dim dout() As Double
+    Dim count As Integer
     
+    
+    count = UBound(d1) + UBound(d2) + UBound(d3) + UBound(d4) + 3 - 2
+    ReDim dout(count) As Double
+    
+    idx = 0
+    
+    For i = 0 To UBound(d1)
+        dout(idx) = d1(i)
+        idx = idx + 1
+    Next
+    
+    If d2(0) = d1(UBound(d1) - 1) Then
+        For i = 2 To UBound(d2)
+            dout(idx) = d2(i)
+            idx = idx + 1
+        Next
+    Else
+        For i = UBound(d2) - 1 To 0 Step -2
+            dout(idx) = d2(i)
+            idx = idx + 1
+            dout(idx) = d2(i + 1)
+            idx = idx + 1
+        Next
+    End If
+    
+    
+    If d3(0) = d2(UBound(d2) - 1) Then
+        For i = 2 To UBound(d3)
+            dout(idx) = d3(i)
+            idx = idx + 1
+        Next
+    Else
+        For i = UBound(d3) - 1 To 0 Step -2
+            dout(idx) = d3(i)
+            idx = idx + 1
+            dout(idx) = d3(i + 1)
+            idx = idx + 1
+        Next
+    End If
+    
+     
+    If d4(0) = d3(UBound(d3) - 1) Then
+        For i = 2 To UBound(d4) - 2
+            dout(idx) = d4(i)
+            idx = idx + 1
+        Next
+    Else
+        For i = UBound(d4) - 1 To 2 Step -2
+            dout(idx) = d4(i)
+            idx = idx + 1
+            dout(idx) = d4(i + 1)
+            idx = idx + 1
+        Next
+    End If
+    
+    
+    mergeAll = dout
+    
+    
+
+End Function
+
+
+
+Function searchInnerLine(plobj As AcadEntity, f1obj As AcadEntity, f2obj As AcadEntity) As Double()
+    searchInnerLine = searchCrossLine(plobj, f1obj, f2obj, True)
+End Function
+
+Function searchOutLine(plobj As AcadEntity, f1obj As AcadEntity, f2obj As AcadEntity) As Double()
+
+    searchOutLine = searchCrossLine(plobj, f1obj, f2obj, False)
+
+End Function
+
+
+Function searchCrossLine(plobj As AcadEntity, f1obj As AcadEntity, f2obj As AcadEntity, isinner As Boolean) As Double()
 
     Dim dpl() As Double
     Dim df1() As Double
@@ -229,12 +317,8 @@ Function searchCrossLine(plobj As AcadEntity, f1obj As AcadEntity, f2obj As Acad
     End If
     
     
-    Set ret = ThisDrawing.ModelSpace.AddLightWeightPolyline(dret)
-    ret.Update
     
-
-
-    Set searchCrossLine = ret
+    searchCrossLine = dret
     
 
 End Function
