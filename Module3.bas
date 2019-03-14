@@ -139,18 +139,14 @@ Function addVertex(ent As AcadEntity, ByVal vx As Double, ByVal vy As Double)
         x2 = ddd(ii)
         y2 = ddd(ii + 1)
         
+        'ff = (y2 - y1) / (x2 - x1)
         
-        If x1 = x2 Then
-            Debug.Print " "
-            
-        End If
+        'ff1 = (vy - y1) / (vx - x1)
+        'ff2 = (y2 - vy) / (x2 - vx)
         
-        f = (y2 - y1) / (x2 - x1)
-        
-        f1 = (vy - y1) / (vx - x1)
-        f2 = (y2 - vy) / (x2 - vx)
-        
-         
+        f = getTan(x1, x2, y1, y2)
+        f1 = getTan(x1, vx, y1, vy)
+        f2 = getTan(vx, x2, vy, y2)
          
         fd = XYDistance(x1, y1, x2, y2)
         fd1 = XYDistance(x1, y1, vx, vy) + XYDistance(x2, y2, vx, vy)
@@ -159,9 +155,9 @@ Function addVertex(ent As AcadEntity, ByVal vx As Double, ByVal vy As Double)
         
         If Abs(f1 - f2) < 0.00001 And Abs(fd - fd1) < 0.00001 Then
             
-            addDonut x2, y2
-            addDonut x1, y1
-            
+            'addDonut x2, y2
+            'addDonut x1, y1
+            addDonut vx, vy
             ent.addVertex ii / 2, newv
             ent.Update
         
@@ -172,11 +168,25 @@ Function addVertex(ent As AcadEntity, ByVal vx As Double, ByVal vy As Double)
         
     Next ii
     
-    
-    
-    
     Debug.Print " "
 End Function
+
+Function getTan(ByVal x1 As Double, ByVal x2 As Double, ByVal y1 As Double, ByVal y2 As Double) As Double
+    
+    Dim t As Double
+    
+    If x1 = x2 Then
+    
+        t = 1.79769313486232E+307
+    Else
+        t = (y2 - y1) / (x2 - x1)
+    
+    End If
+    
+    getTan = t
+
+End Function
+
 
 Function XYDistance(ByVal x1 As Double, ByVal y1 As Double, ByVal x2 As Double, ByVal y2 As Double) As Double
 
