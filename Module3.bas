@@ -11,15 +11,21 @@ Sub Step1()
     Dim vx, vy As Double
     Dim count As Integer
     
+    Dim filletpoint(0 To 7) As Double   '8
+    
+    Dim plout As AcadEntity
+    
+    
     plroad = selectPolylineObs
     arcObjs = selectArcObs
     
     plObjs = arc2lines(arcObjs)
     'ddd = plObjs(0).Coordinates
     
-    
+    index = 0
     For i = 0 To UBound(plroad)
         Set ent = plroad(i)
+        
         For j = 0 To UBound(plObjs)
         
             Set ent2 = plObjs(j)
@@ -30,15 +36,38 @@ Sub Step1()
             vx = ddd(count - 1)
             vy = ddd(count)
             
-            addVertex ent, vx, vy
+            newp = addVertex(ent, vx, vy)
+            
+            If newp(0) <> 0 And newp(1) <> 0 Then
+            
+                filletpoint(index) = newp(0)
+                index = index + 1
+                filletpoint(index) = newp(1)
+                index = index + 1
+                 
+            End If
+            
             
             vx = ddd(0)
             vy = ddd(1)
         
-            addVertex ent, vx, vy
+            newp = addVertex(ent, vx, vy)
+        
+            If newp(0) <> 0 And newp(1) <> 0 Then
+            
+                filletpoint(index) = newp(0)
+                index = index + 1
+                filletpoint(index) = newp(1)
+                index = index + 1
+                 
+            End If
         
         Next
     Next
+    
+    
+    
+    Set plout = searchOutLine(plroad(0), plObjs(0), plObjs(1))
     
     
     
@@ -47,6 +76,190 @@ Sub Step1()
     
     
 End Sub
+
+
+Function searchInnerLine(plobj As AcadEntity, f1obj As AcadEntity, f2obj As AcadEntity) As AcadEntity
+    Set searchInnerLine = searchCrossLine(plobj, f1obj, f2obj, True)
+End Function
+
+Function searchOutLine(plobj As AcadEntity, f1obj As AcadEntity, f2obj As AcadEntity) As AcadEntity
+
+    Set searchOutLine = searchCrossLine(plobj, f1obj, f2obj, False)
+
+End Function
+
+
+Function searchCrossLine(plobj As AcadEntity, f1obj As AcadEntity, f2obj As AcadEntity, isinner As Boolean) As AcadEntity
+
+    Dim ret As AcadLWPolyline
+    
+
+    Dim dpl() As Double
+    Dim df1() As Double
+    Dim df2() As Double
+    Dim point As Double
+    
+    Dim f1idx, f1idxn As Integer    '필렛1 접점 인덱스
+    Dim f2idx, f2idxn As Integer    '필렛2 접점 인덱스
+    
+    Dim index1, index1n As Integer   '폴리라인 접점 인덱스
+    
+    
+    Dim dret() As Double    '리턴좌표
+    
+    
+    'Set ret = Nothing
+    
+    dpl = plobj.Coordinates '폴리라인
+    df1 = f1obj.Coordinates '필렛1
+    df2 = f2obj.Coordinates '필렛2
+
+    x = df1(0)
+    y = df1(1)
+    
+    index1 = searchIndex(dpl, x, y)
+    
+    If index1 = -1 Then
+        count = UBound(df1)
+        
+        x = df1(count - 1)
+        y = df1(count)
+        
+        index1 = searchIndex(dpl, x, y)
+        f1idx = count - 1
+        f1idxn = count - 3
+    Else
+        f1idx = 0
+        f1idxn = 2
+        
+    
+    End If
+    
+    x = df2(0)
+    y = df2(1)
+    
+    index2 = searchIndex(dpl, x, y)
+    
+    If index2 = -1 Then
+        count = UBound(df2)
+        
+        x = df2(count - 1)
+        y = df2(count)
+        
+        index2 = searchIndex(dpl, x, y)
+        f2idx = count - 1
+        f2idxn = count - 3
+    Else
+        f2idx = 0
+        f2idxn = 2
+    End If
+    
+
+
+    If index1 + 2 > UBound(dpl) Then
+        index1n = index1 - 2
+    Else
+        index1n = index1 + 2
+    End If
+
+
+    cx = dpl(index1)
+    cy = dpl(index1 + 1)
+    
+    x1 = dpl(index1n)
+    y1 = dpl(index1n + 1)
+    
+    x2 = df1(f1idxn)
+    y2 = df1(f1idxn + 1)
+
+    addDonut2 cx, cy
+    addDonut2 x1, y1
+    addDonut2 x2, y2
+    
+
+
+    rad = Abs(Atn((y2 - cy) / (x2 - cx)) - Atn((y1 - cy) / (c1 - cx)))
+    
+    If rad < 1.571 = isinner Then '삭제영역에 해당함
+        If index2 > index1 Then     '올바른 방향임
+            count = index2 - index1 + 1
+            ReDim dret(0 To count) As Double
+            
+            For i = index1 To index2 + 1
+                dret(i - index1) = dpl(i)
+            Next
+        
+        Else
+            count = index1 - index2 + 1
+            ReDim dret(0 To count) As Double
+            
+            For i = index2 To index1 + 1
+                dret(i - index2) = dpl(i)
+            Next
+        
+        
+        End If
+        
+    Else
+        If index2 > index1 Then
+        
+            count = index1 + UBound(dpl) - index2 + 2   'y좌표 2개라서 +2
+            ReDim dret(0 To count) As Double
+            idx = 0
+        
+            For i = index2 To UBound(dpl)   '개수만큼 찾기때문에 y가 포함됨 +1 안함
+                dret(idx) = dpl(i)
+                idx = idx + 1
+            Next
+                    
+            For i = 0 To index1 + 1 'y좌표 포함해야하므로 +1
+                dret(idx) = dpl(i)
+                idx = idx + 1
+            Next
+            
+            
+            Debug.Print
+            
+            
+            
+        Else
+        
+        End If
+    
+    End If
+    
+    
+    Set ret = ThisDrawing.ModelSpace.AddLightWeightPolyline(dret)
+    ret.Update
+    
+
+
+    Set searchCrossLine = ret
+    
+
+End Function
+
+Function searchIndex(d() As Double, ByVal x As Double, ByVal y As Double) As Integer
+
+    Dim index As Integer
+    
+    index = -1
+    
+    For i = 0 To UBound(d) Step 2
+    
+        If d(i) = x And d(i + 1) = y Then
+            index = i
+        End If
+    
+    Next
+
+
+    searchIndex = index
+    
+End Function
+
+
+
 
 
 Function selectArcObs() As AcadEntity()
@@ -116,16 +329,17 @@ Function selectPolylineObs() As AcadEntity()
 
 End Function
 
-Function addVertex(ent As AcadEntity, ByVal vx As Double, ByVal vy As Double)
+Function addVertex(ent As AcadEntity, ByVal vx As Double, ByVal vy As Double) As Double()
 
     Dim newv(0 To 1) As Double
     Dim ddd() As Double
     Dim count As Integer
-    'Dim distance As Double
+    Dim distance As Double
 
-    'vx = 1194.35534891423
-    'vy = 2999.85414787302
+    Dim ret As Boolean
+    
     newv(0) = vx: newv(1) = vy
+    ret = False
     
     'addDonut vx, vy
     ddd = ent.Coordinates
@@ -160,6 +374,7 @@ Function addVertex(ent As AcadEntity, ByVal vx As Double, ByVal vy As Double)
             addDonut vx, vy
             ent.addVertex ii / 2, newv
             ent.Update
+            ret = True
         
         End If
         
@@ -169,6 +384,18 @@ Function addVertex(ent As AcadEntity, ByVal vx As Double, ByVal vy As Double)
     Next ii
     
     Debug.Print " "
+    
+    If ret = False Then
+        newv(0) = 0
+        newv(1) = 0
+    
+    End If
+    
+    
+    addVertex = newv
+        
+        
+    
 End Function
 
 Function getTan(ByVal x1 As Double, ByVal x2 As Double, ByVal y1 As Double, ByVal y2 As Double) As Double
@@ -186,6 +413,10 @@ Function getTan(ByVal x1 As Double, ByVal x2 As Double, ByVal y1 As Double, ByVa
     getTan = t
 
 End Function
+
+
+
+
 
 
 Function XYDistance(ByVal x1 As Double, ByVal y1 As Double, ByVal x2 As Double, ByVal y2 As Double) As Double
@@ -336,6 +567,23 @@ Function addDonut(ByVal x1 As Double, ByVal y1 As Double)
 
 End Function
 
+Function addDonut2(ByVal x1 As Double, ByVal y1 As Double)
+
+    Dim circleObj As AcadCircle
+    Dim centerPoint(0 To 2) As Double
+    
+    centerPoint(0) = x1
+    centerPoint(1) = y1
+    
+    Set circleObj = ThisDrawing.ModelSpace.AddCircle(centerPoint, 0.5)
+    circleObj.Update
+    
+    'Donut x1, y1, 5
+    
+
+End Function
+
+
 
 Function getEntitySize(ss As AcadSelectionSet, text As String) As Integer
 
@@ -446,7 +694,7 @@ Sub Test()
     
     Dim temp As Variant
     
-    Dim Index As Integer
+    Dim index As Integer
     
     
     With ThisDrawing
