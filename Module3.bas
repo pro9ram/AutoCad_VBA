@@ -36,7 +36,7 @@ Sub Step1()
         
         For j = 0 To UBound(plObjs)
         
-            Set ent2 = plObjs(j)
+            Set ent2 = plObjs(j)    ' fillet 위치
             ddd = ent2.Coordinates
             
             count = UBound(ddd)
@@ -77,12 +77,11 @@ Sub Step1()
     
     dout1 = searchOutLine(plroad(0), plObjs(0), plObjs(1))
     
-    ThisDrawing.ModelSpace.AddLightWeightPolyline (dout1)
+    'ThisDrawing.ModelSpace.AddLightWeightPolyline(dout1).color = acRed
     
     dout2 = searchInnerLine(plroad(1), plObjs(0), plObjs(1))
     
-    ThisDrawing.ModelSpace.AddLightWeightPolyline (dout2)
-    Debug.Print " "
+    'ThisDrawing.ModelSpace.AddLightWeightPolyline(dout2).color = acMagenta
     
     Set ent = plObjs(0)
     df1 = ent.Coordinates
@@ -96,17 +95,40 @@ Sub Step1()
     plResult.Closed = True
     plResult.Update
     
-    
+    plroad(0).Delete
+    deleteEntities plObjs
     
 End Sub
+
+
+Function deleteEntities(ents() As AcadEntity)
+
+    Dim ent As AcadEntity
+    
+    For i = 0 To UBound(ents)
+        Set ent = ents(i)
+        ent.Delete
+    Next
+    
+End Function
+
+
+
+
 
 Function mergeAll(d1() As Double, d2() As Double, d3() As Double, d4() As Double) As Double()
 
     Dim dout() As Double
     Dim count As Integer
+    Dim reverse As Boolean
     
     
+    reverse = False
+    
+    'count = UBound(d1) + UBound(d2) + 3 - 2
+    'count = UBound(d1) + UBound(d2) + UBound(d3) + 4 - 2
     count = UBound(d1) + UBound(d2) + UBound(d3) + UBound(d4) + 3 - 2
+    
     ReDim dout(count) As Double
     
     idx = 0
@@ -116,25 +138,43 @@ Function mergeAll(d1() As Double, d2() As Double, d3() As Double, d4() As Double
         idx = idx + 1
     Next
     
+    
+    addDonut3 d1(0), d1(1)
+    addDonut3 dout(idx - 2), dout(idx - 1)
+    
     If d2(0) = d1(UBound(d1) - 1) Then
-        For i = 2 To UBound(d2)
-            dout(idx) = d2(i)
-            idx = idx + 1
-        Next
+        reverse = False
     Else
-        For i = UBound(d2) - 1 To 0 Step -2
+        reverse = True
+    End If
+    
+    If reverse = False Then
+        For i = 2 To UBound(d2) Step 2
             dout(idx) = d2(i)
             idx = idx + 1
             dout(idx) = d2(i + 1)
             idx = idx + 1
+            addDonut3 dout(idx - 2), dout(idx - 1)
+        Next
+        
+    Else
+        For i = UBound(d2) - 3 To 0 Step -2
+            dout(idx) = d2(i)
+            idx = idx + 1
+            dout(idx) = d2(i + 1)
+            idx = idx + 1
+            addDonut3 dout(idx - 2), dout(idx - 1)
         Next
     End If
-    
-    
-    If d3(0) = d2(UBound(d2) - 1) Then
-        For i = 2 To UBound(d3)
+        
+    If reverse = False Then
+        For i = 2 To UBound(d3) Step 2
             dout(idx) = d3(i)
             idx = idx + 1
+            dout(idx) = d3(i + 1)
+            idx = idx + 1
+            addDonut3 dout(idx - 2), dout(idx - 1)
+     
         Next
     Else
         For i = UBound(d3) - 1 To 0 Step -2
@@ -142,23 +182,39 @@ Function mergeAll(d1() As Double, d2() As Double, d3() As Double, d4() As Double
             idx = idx + 1
             dout(idx) = d3(i + 1)
             idx = idx + 1
+            addDonut3 dout(idx - 2), dout(idx - 1)
         Next
     End If
     
-     
-    If d4(0) = d3(UBound(d3) - 1) Then
-        For i = 2 To UBound(d4) - 2
-            dout(idx) = d4(i)
-            idx = idx + 1
-        Next
+    If d3(0) = d2(UBound(d2) - 1) Then
+        reverse = reverse
     Else
-        For i = UBound(d4) - 1 To 2 Step -2
+        reverse = Not reverse
+    End If
+    
+    If reverse = True Then 'd3(0) = d2(UBound(d2) - 1)
+        For i = 2 To UBound(d4) Step 2
             dout(idx) = d4(i)
             idx = idx + 1
             dout(idx) = d4(i + 1)
             idx = idx + 1
+            addDonut3 dout(idx - 2), dout(idx - 1)
+        Next
+    Else
+        For i = UBound(d4) - 1 To 0 Step -2
+            dout(idx) = d4(i)
+            idx = idx + 1
+            dout(idx) = d4(i + 1)
+            idx = idx + 1
+            addDonut3 dout(idx - 2), dout(idx - 1)
         Next
     End If
+    
+     
+    'addDonut3 d4(0), d4(1)
+    'addDonut3 dout(idx - 2), dout(idx - 1)
+
+    
     
     
     mergeAll = dout
@@ -194,7 +250,7 @@ Function searchCrossLine(plobj As AcadEntity, f1obj As AcadEntity, f2obj As Acad
     
     
     Dim dret() As Double    '리턴좌표
-    
+    Dim itotal As Integer
     
     'Set ret = Nothing
     
@@ -204,6 +260,7 @@ Function searchCrossLine(plobj As AcadEntity, f1obj As AcadEntity, f2obj As Acad
 
     x = df1(0)
     y = df1(1)
+    
     
     index1 = searchIndex(dpl, x, y)
     
@@ -260,31 +317,73 @@ Function searchCrossLine(plobj As AcadEntity, f1obj As AcadEntity, f2obj As Acad
     x2 = df1(f1idxn)
     y2 = df1(f1idxn + 1)
 
-    addDonut2 cx, cy
-    addDonut2 x1, y1
-    addDonut2 x2, y2
+    'addDonut3 cx, cy
+    'addDonut3 x1, y1
+    'addDonut3 x2, y2
     
 
 
     rad = Abs(Atn((y2 - cy) / (x2 - cx)) - Atn((y1 - cy) / (c1 - cx)))
     
-    If rad < 1.571 = isinner Then '삭제영역에 해당함
+    
+    
+    If (rad < 1.571) = isinner Then '삭제영역에 해당함
+    
+        itotal = UBound(dpl)
+        If index2 = 0 Then
+            index2 = itotal
+        End If
+        
         If index2 > index1 Then     '올바른 방향임
-            count = index2 - index1 + 1
+            count = index2 - index1 + 2
             ReDim dret(0 To count) As Double
             
-            For i = index1 To index2 + 1
-                dret(i - index1) = dpl(i)
+            idx = 0
+            
+            For i = index1 To index2 + 2 Step 2
+            
+                If i > itotal Then
+                    dret(idx) = dpl(i - (itotal + 1))
+                    idx = idx + 1
+                    dret(idx) = dpl(i - (itotal + 1) + 1)
+                    idx = idx + 1
+                Else
+                    dret(idx) = dpl(i)
+                    idx = idx + 1
+                    dret(idx) = dpl(i + 1)
+                    idx = idx + 1
+                End If
+            
+                'addDonut3 dret(idx - 2), dret(idx - 1)
             Next
         
         Else
             count = index1 - index2 + 1
             ReDim dret(0 To count) As Double
             
-            For i = index2 To index1 + 1
-                dret(i - index2) = dpl(i)
+            idx = 0
+            
+            For i = index2 To index1 + 1 Step 2
+                dret(idx) = dpl(i)
+                idx = idx + 1
+                dret(idx) = dpl(i + 1)
+                idx = idx + 1
             Next
+            'count = index1 - index2 + 1
+            'ReDim dret(0 To count) As Double
+            
+            'idx = 0
+            'For i = index1 To index2 Step -2
+            '   dret(idx) = dpl(i)
+            '   idx = idx + 1
+            '   dret(idx) = dpl(i + 1)
+            '   idx = idx + 1
+            '   addDonut3 dpl(i), dpl(i + 1)
+            
+            'Next
         
+            Debug.Print " "
+            
         
         End If
         
@@ -425,7 +524,7 @@ Function addVertex(ent As AcadEntity, ByVal vx As Double, ByVal vy As Double) As
     newv(0) = vx: newv(1) = vy
     ret = False
     
-    'addDonut vx, vy
+    addDonut2 vx, vy
     ddd = ent.Coordinates
     count = UBound(ddd)
     
@@ -449,9 +548,10 @@ Function addVertex(ent As AcadEntity, ByVal vx As Double, ByVal vy As Double) As
         fd = XYDistance(x1, y1, x2, y2)
         fd1 = XYDistance(x1, y1, vx, vy) + XYDistance(x2, y2, vx, vy)
         
-
+        addDonut x2, y2
+        addDonut x1, y1
         
-        If Abs(f1 - f2) < 0.00001 And Abs(fd - fd1) < 0.00001 Then
+        If Abs(fd - fd1) < 0.00001 Then
             
             'addDonut x2, y2
             'addDonut x1, y1
@@ -635,19 +735,24 @@ Sub SelectRawData()
 End Sub
 
 
+
 Function addDonut(ByVal x1 As Double, ByVal y1 As Double)
 
+    
     Dim circleObj As AcadCircle
     Dim centerPoint(0 To 2) As Double
     
-    centerPoint(0) = x1
-    centerPoint(1) = y1
+    Dim test As Boolean
     
-    Set circleObj = ThisDrawing.ModelSpace.AddCircle(centerPoint, 1)
-    circleObj.Update
     
-    'Donut x1, y1, 5
-    
+    test = False
+    If test = True Then
+        centerPoint(0) = x1
+        centerPoint(1) = y1
+        
+        Set circleObj = ThisDrawing.ModelSpace.AddCircle(centerPoint, 1)
+        circleObj.Update
+    End If
 
 End Function
 
@@ -656,16 +761,41 @@ Function addDonut2(ByVal x1 As Double, ByVal y1 As Double)
     Dim circleObj As AcadCircle
     Dim centerPoint(0 To 2) As Double
     
-    centerPoint(0) = x1
-    centerPoint(1) = y1
+     Dim test As Boolean
     
-    Set circleObj = ThisDrawing.ModelSpace.AddCircle(centerPoint, 0.5)
-    circleObj.Update
     
-    'Donut x1, y1, 5
+    test = False
+    If test = True Then
+        centerPoint(0) = x1
+        centerPoint(1) = y1
+        
+        Set circleObj = ThisDrawing.ModelSpace.AddCircle(centerPoint, 0.5)
+        circleObj.Update
+    End If
     
 
 End Function
+
+Function addDonut3(ByVal x1 As Double, ByVal y1 As Double)
+
+    Dim circleObj As AcadCircle
+    Dim centerPoint(0 To 2) As Double
+    
+     Dim test As Boolean
+    
+    
+    test = True
+    If test = True Then
+        centerPoint(0) = x1
+        centerPoint(1) = y1
+        
+        Set circleObj = ThisDrawing.ModelSpace.AddCircle(centerPoint, 0.5)
+        circleObj.Update
+    End If
+    
+
+End Function
+
 
 
 
@@ -760,7 +890,7 @@ End Function
  
 
 
-Sub Test()
+Sub test()
     
     Dim SelPl(0 To 1) As AcadEntity
     Dim splyObj As AcadLWPolyline
