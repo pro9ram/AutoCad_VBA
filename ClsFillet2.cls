@@ -2,7 +2,7 @@ VERSION 1.0 CLASS
 BEGIN
   MultiUse = -1  'True
 END
-Attribute VB_Name = "clsFillet"
+Attribute VB_Name = "ClsFillet2"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
@@ -16,9 +16,6 @@ Private ptIntersection As Variant
 
 Public Function load()
 
-    Dim p1 As New clsPoint
-    Dim p2() As Double
-    Dim p3 As New clsPoint
     Dim retArc As AcadEntity
     Dim tmp As Variant
     
@@ -36,44 +33,91 @@ Public Function load()
     
     Dim merge As New ClsMerger
     Dim resultd() As Double
-    Dim result As AcadEntity
     Dim test As Boolean
     
-    
-    ThisDrawing.SetVariable "osmode", 512
-    ThisDrawing.Utility.getEntity newroad, tmp, "Enter a point 1: "
-        
-    p1.initPt tmp
+    Dim pt1 As New clsPoint
+    Dim pt3 As New clsPoint
     
     
+    Dim pr1 As New clsPolygonReader
+    Dim pr2 As New clsPolygonReader
     
-        
-    ThisDrawing.SetVariable "osmode", 0
-    p2 = ThisDrawing.Utility.getPoint(, "Enter a point2: ")
+    Dim line1 As AcadLine
+    Dim line2 As AcadLine
+    Dim resultpl As AcadLine
+    Dim ssetObj As AcadSelectionSet
+    Dim result As AcadEntity
+
+  
+    Dim selec1 As New ClsSelEntity
+    Dim selec2 As New ClsSelEntity
+    
+    
+    Dim seler As New ClsSelReal
+    Dim frad As Double
+    
+    Dim selecs As New clsSelSets
+    
+    selec1.selectPolyline ("Get Polyline 1: ")
+    Set newroad = selec1.getEntity
+    Set pt1 = selec1.getPoint
+    
+    selec2.selectPolyline ("Get Polyline 2: ")
+    Set oldroad = selec2.getEntity
+    Set pt3 = selec2.getPoint
+    
+    
+    
+    
+    ptIntersection = searchCrossVertext(newroad, oldroad)
+    
+    Set np3 = getNearPoint2(ptIntersection, pt3)
+    
+    'addDonut5 pt1.x, pt1.y
+    'addDonut5 pt3.x, pt3.y
+    'addDonut5 np3.x, np3.y
+    
+    
+    pr1.init newroad
+    Set line1 = pr1.getLine(pt1)
+    
      
-    ThisDrawing.SetVariable "osmode", 512
-    ThisDrawing.Utility.getEntity oldroad, tmp, "Enter a point 3: "
+    pr2.init oldroad
+    Set line2 = pr2.getLine(pt3)
     
-    p3.initPt tmp
+     
+    
+    Set resultpl = getShortestLine(line2, pt3, np3)
     
     
-    Debug.Print "p1: " & p1.x & ", " & p1.y
-    Debug.Print "p2: " & p2(0) & ", " & p2(1)
-    Debug.Print "p3: " & p3.x & ", " & p3.y
+    frad = seler.selectReal
     
-    test = False
     
-    If test = True Then
-        p1.x = 2775.17827046719
-        p1.y = 2603.02116973727
-        p2(0) = 2773.78983919124
-        p2(1) = 2605.02952223306
-        p3.x = 2770.42837317067
-        p3.y = 2606.45362901053
+    'Application.ActiveDocument.SendCommand "_chamfer" & vbCr & "D" & vbCr & "1" & vbCr & "1" & vbCr & "(HandEnt """ & line1.Handle & """)" & vbCr & "(HandEnt """ & line2.Handle & """)" & vbCr
+    Application.ActiveDocument.SendCommand "_fillet" & vbCr & "T" & vbCr & "N" & vbCr & "r" & vbCr & frad & vbCr & "(HandEnt """ & line1.Handle & """)" & vbCr & "(HandEnt """ & resultpl.Handle & """)" & vbCr
+    
+    
+    Set retArc = selecs.selectArc
+    
+    'Set retArc = selectArcObj
+    
+    'Set ssetObj = ThisDrawing.ActiveSelectionSet
+    '
+    'ssetObj.Select acSelectionSetLast
+    '
+    'For Each ent In ssetObj
+    '   Set retArc = ent
+    'Next
+    
+    If line2.Handle <> resultpl.Handle Then
+        resultpl.Delete
     End If
     
+    line1.Delete
+    line2.Delete
     
-    Set retArc = getArcBy3P(p1.getPoints(), p2, p3.getPoints()) '세점을 지나는 아크를 생성
+    
+    
     Set fillet = arc2line(retArc)  '아크를 라인으로 변경
     filletsplit = fillet.Coordinates
     
@@ -103,12 +147,12 @@ Public Function load()
     addVertex oldroad, np3.x, np3.y     '기존도로에 접점추가
     
 
-   
+    
     Debug.Print "cross point created"
     
     pr.init newroad
     pr.setIndexByPoint np1
-    pr.checkDirection p3
+    pr.checkDirection pt3
     
     'addDonut5 np3.x, np3.y
     'addDonut5 np1.x, np1.y
@@ -116,12 +160,12 @@ Public Function load()
     
     newroadsplit = pr.splitInnerLine(np3, np1)
     'addLine newroadsplit
-    
+ 
     Debug.Print "newroad split created"
    
     pr.init oldroad
     pr.setIndexByPoint np2
-    pr.checkDirection p1
+    pr.checkDirection pt1
     
     Debug.Print "oldroad direction processed"
     
@@ -148,13 +192,12 @@ Public Function load()
     newroad.Delete
     fillet.Delete
     
+    
+    
     ThisDrawing.SendCommand "sob" & vbCr
     
-    
     Set temp = ThisDrawing.ActiveLayer
-    
     result.Layer = ThisDrawing.ActiveLayer.Name
-    
     
     
 End Function
@@ -232,3 +275,4 @@ Private Function searchCrossVertext(src As AcadEntity, dst As AcadEntity) As Var
     
 End Function
  
+
