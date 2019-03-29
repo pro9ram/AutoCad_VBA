@@ -7,6 +7,7 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
+Private orgLayer As String
 Private oldroad As AcadEntity
 Private newroad As AcadEntity
 Private fillet As AcadEntity
@@ -16,9 +17,9 @@ Private ptIntersection As Variant
 
 Public Function load()
 
-    Dim p1 As New clsPoint
+    Dim pt1 As New clsPoint
     Dim p2() As Double
-    Dim p3 As New clsPoint
+    Dim pt3 As New clsPoint
     Dim retArc As AcadEntity
     Dim tmp As Variant
     
@@ -40,40 +41,34 @@ Public Function load()
     Dim test As Boolean
     
     
-    ThisDrawing.SetVariable "osmode", 512
-    ThisDrawing.Utility.getEntity newroad, tmp, "Enter a point 1: "
-        
-    p1.initPt tmp
+    
+    Dim selec1 As New ClsSelEntity
+    Dim selec2 As New ClsSelEntity
     
     
+    Dim seler As New ClsSelReal
+    Dim frad As Double
     
-        
+    Dim selecs As New clsSelSets
+    
+    selec1.selectPolyline ("Get Polyline 1: ")
+    Set newroad = selec1.getEntity
+    Set pt1 = selec1.getPoint
+    
     ThisDrawing.SetVariable "osmode", 0
     p2 = ThisDrawing.Utility.getPoint(, "Enter a point2: ")
-     
-    ThisDrawing.SetVariable "osmode", 512
-    ThisDrawing.Utility.getEntity oldroad, tmp, "Enter a point 3: "
     
-    p3.initPt tmp
+    selec2.selectPolyline ("Get Polyline 2: ")
+    Set oldroad = selec2.getEntity
+    Set pt3 = selec2.getPoint
     
     
-    Debug.Print "p1: " & p1.x & ", " & p1.y
+    Debug.Print "pt1: " & pt1.x & ", " & pt1.y
     Debug.Print "p2: " & p2(0) & ", " & p2(1)
-    Debug.Print "p3: " & p3.x & ", " & p3.y
+    Debug.Print "pt3: " & pt3.x & ", " & pt3.y
+   
     
-    test = False
-    
-    If test = True Then
-        p1.x = 2775.17827046719
-        p1.y = 2603.02116973727
-        p2(0) = 2773.78983919124
-        p2(1) = 2605.02952223306
-        p3.x = 2770.42837317067
-        p3.y = 2606.45362901053
-    End If
-    
-    
-    Set retArc = getArcBy3P(p1.getPoints(), p2, p3.getPoints()) '세점을 지나는 아크를 생성
+    Set retArc = getArcBy3P(pt1.getPoints(), p2, pt3.getPoints()) '세점을 지나는 아크를 생성
     Set fillet = arc2line(retArc)  '아크를 라인으로 변경
     filletsplit = fillet.Coordinates
     
@@ -84,6 +79,12 @@ Public Function load()
     
     
     ptIntersection = searchCrossVertext(newroad, oldroad)
+    
+        
+    For i = 0 To UBound(ptIntersection) Step 3
+        addDonutY ptIntersection(i), ptIntersection(i + 1)
+        
+    Next i
     
     newp1 = findVertex(newroad, fillet)   '아크와 도로(새도로)의 접점 추가
     newp2 = findVertex(oldroad, fillet)   '아크와 도로(구도로)의 접점 추가
@@ -96,19 +97,22 @@ Public Function load()
     Debug.Print "np1: " & np1.x & ", " & np1.y
     Debug.Print "np2: " & np2.x & ", " & np2.y
     
+    addDonutB np1.x, np1.y
+    addDonutB np2.x, np2.y
+    
    
     Set np3 = getFarPoint2(ptIntersection, np2)     '기존도로 아크 접점에서 먼 지점을 찾는다
     
     
     addVertex oldroad, np3.x, np3.y     '기존도로에 접점추가
     
-
+    addDonutG np3.x, np3.y
    
     Debug.Print "cross point created"
     
     pr.init newroad
     pr.setIndexByPoint np1
-    pr.checkDirection p3
+    pr.checkDirection pt3
     
     'addDonut5 np3.x, np3.y
     'addDonut5 np1.x, np1.y
@@ -121,7 +125,7 @@ Public Function load()
    
     pr.init oldroad
     pr.setIndexByPoint np2
-    pr.checkDirection p1
+    pr.checkDirection pt1
     
     Debug.Print "oldroad direction processed"
     
@@ -145,15 +149,21 @@ Public Function load()
     
     
     Set result = addLine(merge.getMerged)
-    newroad.Delete
+    'newroad.Delete
     fillet.Delete
     
     ThisDrawing.SendCommand "sob" & vbCr
     
     
-    Set temp = ThisDrawing.ActiveLayer
+    'Set temp = ThisDrawing.ActiveLayer
     
-    result.Layer = ThisDrawing.ActiveLayer.name
+    orgLayer = newroad.Layer
+    result.Layer = getAddLayerName(orgLayer)
+    newroad.Layer = getDelLayerName(orgLayer)
+    
+    If orgLayer Like LYR_ADD & "*" Then
+        newroad.Delete
+    End If
     
     
     

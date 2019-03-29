@@ -7,6 +7,7 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
+Private orgLayer As String
 Private oldroad As AcadEntity
 Private newroad As AcadEntity
 Private fillet As AcadEntity
@@ -16,12 +17,13 @@ Private ptIntersection As Variant
 
 Public Function load()
 
-    Dim p1 As New clsPoint
-    Dim p2() As Double
-    Dim p3 As New clsPoint
-    Dim retArc As AcadEntity
+    Dim pt1 As New clsPoint
+    Dim pt3 As New clsPoint
+    Dim retLine As AcadLine
     Dim tmp As Variant
     
+    Dim sp(0 To 2) As Double
+    Dim ep(0 To 2) As Double
     
     Dim np1 As New clsPoint
     Dim np2 As New clsPoint
@@ -32,7 +34,7 @@ Public Function load()
     
     Dim newroadsplit() As Double
     Dim oldroadsplit() As Double
-    Dim filletsplit() As Double
+    Dim additionsplit(0 To 3) As Double
     
     Dim merge As New ClsMerger
     Dim resultd() As Double
@@ -40,34 +42,32 @@ Public Function load()
     Dim test As Boolean
     
     
-    ThisDrawing.SetVariable "osmode", 512
-    ThisDrawing.Utility.getEntity newroad, tmp, "Enter a point 1: "
-        
-    p1.initPt tmp
-     
-    ThisDrawing.SetVariable "osmode", 512
-    ThisDrawing.Utility.getEntity oldroad, tmp, "Enter a point 3: "
-    
-    p3.initPt tmp
+    Dim selec1 As New ClsSelEntity
+    Dim selec2 As New ClsSelEntity
     
     
-    Debug.Print "p1: " & p1.x & ", " & p1.y
-    Debug.Print "p3: " & p3.x & ", " & p3.y
+    Dim seler As New ClsSelReal
+    Dim frad As Double
+    
+    Dim selecs As New clsSelSets
+    
+    selec1.selectPolyline ("Get Polyline 1: ")
+    Set newroad = selec1.getEntity
+    Set pt1 = selec1.getPoint
+    
+    selec2.selectPolyline ("Get Polyline 2: ")
+    Set oldroad = selec2.getEntity
+    Set pt3 = selec2.getPoint
+    
+
+    
+    sp(0) = pt1.x
+    sp(1) = pt1.y
+    ep(0) = pt3.x
+    ep(1) = pt3.y
     
     
-    addDonut5 p1.x, p1.y
-    addDonut5 p3.x, p3.y
-    
-    Dim vlist(0 To 3) As Double
-    
-    vlist(0) = p1.x
-    vlist(1) = p1.y
-    vlist(2) = p3.x
-    vlist(3) = p3.y
-    
-    
-    
-    Set retArc = ThisDrawing.ModelSpace.AddLightWeightPolyline(vlist)
+    Set retLine = ThisDrawing.ModelSpace.addLine(sp, ep)
     
     'retArc.Delete
     
@@ -77,8 +77,8 @@ Public Function load()
     
     ptIntersection = searchCrossVertext(newroad, oldroad)
     
-    newp1 = findVertex(newroad, retArc)   '아크와 도로(새도로)의 접점 추가
-    newp2 = findVertex(oldroad, retArc)   '아크와 도로(구도로)의 접점 추가
+    newp1 = findVertexAtLine(newroad, retLine)   '아크와 도로(새도로)의 접점 추가
+    newp2 = findVertexAtLine(oldroad, retLine)   '아크와 도로(구도로)의 접점 추가
    
    
     np1.initXy newp1(0), newp1(1)
@@ -88,6 +88,11 @@ Public Function load()
     Debug.Print "np1: " & np1.x & ", " & np1.y
     Debug.Print "np2: " & np2.x & ", " & np2.y
     
+
+    additionsplit(0) = np1.x
+    additionsplit(1) = np1.y
+    additionsplit(2) = np2.x
+    additionsplit(3) = np2.y
    
     Set np3 = getFarPoint2(ptIntersection, np2)     '기존도로 아크 접점에서 먼 지점을 찾는다
     
@@ -100,7 +105,7 @@ Public Function load()
     
     pr.init newroad
     pr.setIndexByPoint np1
-    pr.checkDirection p3
+    pr.checkDirection pt3
     
     'addDonut5 np3.x, np3.y
     'addDonut5 np1.x, np1.y
@@ -113,7 +118,7 @@ Public Function load()
    
     pr.init oldroad
     pr.setIndexByPoint np2
-    pr.checkDirection p1
+    pr.checkDirection pt1
     
     Debug.Print "oldroad direction processed"
     
@@ -124,25 +129,32 @@ Public Function load()
     
     Debug.Print "oldroad split created"
         
-     size1 = UBound(newroadsplit)
-    size2 = UBound(vlist)
+    size1 = UBound(newroadsplit)
+    size2 = UBound(additionsplit)
     size3 = UBound(oldroadsplit)
     
     merge.setSize size1 + size2 + size3 + 2
     
     
     merge.add newroadsplit
-    merge.add vlist
+    merge.add additionsplit
     merge.add oldroadsplit
     
     
-    addLine merge.getMerged
-    newroad.Delete
-    retArc.Delete
-    
-    
+    Set result = addLine(merge.getMerged)
+    'newroad.Delete
+    retLine.Delete
     
     'ThisDrawing.SendCommand "sob" & vbCr
+    
+    orgLayer = newroad.Layer
+    result.Layer = getAddLayerName(orgLayer)
+    newroad.Layer = getDelLayerName(orgLayer)
+    
+    If orgLayer Like LYR_ADD & "*" Then
+        newroad.Delete
+    End If
+    
     
 End Function
  
