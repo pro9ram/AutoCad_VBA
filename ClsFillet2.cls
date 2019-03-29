@@ -7,6 +7,7 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
+Private orgLayer As String
 Private oldroad As AcadEntity
 Private newroad As AcadEntity
 Private fillet As AcadEntity
@@ -67,15 +68,9 @@ Public Function load()
     Set pt3 = selec2.getPoint
     
     
-    
-    
     ptIntersection = searchCrossVertext(newroad, oldroad)
     
     Set np3 = getNearPoint2(ptIntersection, pt3)
-    
-    'addDonut5 pt1.x, pt1.y
-    'addDonut5 pt3.x, pt3.y
-    'addDonut5 np3.x, np3.y
     
     
     pr1.init newroad
@@ -90,10 +85,9 @@ Public Function load()
     Set resultpl = getShortestLine(line2, pt3, np3)
     
     
-    frad = seler.selectReal
+    frad = seler.selectFilletRadius
     
     
-    'Application.ActiveDocument.SendCommand "_chamfer" & vbCr & "D" & vbCr & "1" & vbCr & "1" & vbCr & "(HandEnt """ & line1.Handle & """)" & vbCr & "(HandEnt """ & line2.Handle & """)" & vbCr
     Application.ActiveDocument.SendCommand "_fillet" & vbCr & "T" & vbCr & "N" & vbCr & "r" & vbCr & frad & vbCr & "(HandEnt """ & line1.Handle & """)" & vbCr & "(HandEnt """ & resultpl.Handle & """)" & vbCr
     
     
@@ -129,6 +123,12 @@ Public Function load()
     
     ptIntersection = searchCrossVertext(newroad, oldroad)
     
+    
+    For i = 0 To UBound(ptIntersection) Step 3
+        addDonutY ptIntersection(i), ptIntersection(i + 1)
+        
+    Next i
+    
     newp1 = findVertex(newroad, fillet)   '아크와 도로(새도로)의 접점 추가
     newp2 = findVertex(oldroad, fillet)   '아크와 도로(구도로)의 접점 추가
    
@@ -140,13 +140,16 @@ Public Function load()
     Debug.Print "np1: " & np1.x & ", " & np1.y
     Debug.Print "np2: " & np2.x & ", " & np2.y
     
+    addDonutB np1.x, np1.y
+    addDonutB np2.x, np2.y
    
     Set np3 = getFarPoint2(ptIntersection, np2)     '기존도로 아크 접점에서 먼 지점을 찾는다
     
     
     addVertex oldroad, np3.x, np3.y     '기존도로에 접점추가
     
-
+    addDonutG np3.x, np3.y
+     
     
     Debug.Print "cross point created"
     
@@ -171,8 +174,7 @@ Public Function load()
     
     oldroadsplit = pr.splitInnerLine(np2, np3)
     'addLine oldroadsplit
-    
-    
+
     
     Debug.Print "oldroad split created"
         
@@ -189,15 +191,23 @@ Public Function load()
     
     
     Set result = addLine(merge.getMerged)
-    newroad.Delete
+    'newroad.Delete
     fillet.Delete
     
     
     
     ThisDrawing.SendCommand "sob" & vbCr
     
-    Set temp = ThisDrawing.ActiveLayer
-    result.Layer = ThisDrawing.ActiveLayer.Name
+    'Set temp = ThisDrawing.ActiveLayer
+    
+    orgLayer = newroad.Layer
+    result.Layer = getAddLayerName(orgLayer)
+    newroad.Layer = getDelLayerName(orgLayer)
+    
+    If orgLayer Like LYR_ADD & "*" Then
+        newroad.Delete
+    End If
+    
     
     
 End Function
@@ -265,14 +275,4 @@ Private Function getArcBy3P(p1() As Double, p2() As Double, p3() As Double) As A
 
 End Function
 
-
-
-Private Function searchCrossVertext(src As AcadEntity, dst As AcadEntity) As Variant
-
-    Dim size As Integer
-    
-    searchCrossVertext = src.IntersectWith(dst, acExtendOtherEntity)   'find vertex
-    
-End Function
  
-

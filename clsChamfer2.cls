@@ -77,8 +77,6 @@ Public Function load()
     
     Set np3 = getNearPoint2(ptIntersection, pt3)
     
-    'addDonut5 pt1.x, pt1.y
-    'addDonut5 pt3.x, pt3.y
     'addDonut5 np3.x, np3.y
     
     
@@ -97,7 +95,7 @@ Public Function load()
     frad = seler.selectChamferDistance
     
     
-    Application.ActiveDocument.SendCommand "_chamfer" & vbCr & "D" & vbCr & frad & vbCr & frad & vbCr & "(HandEnt """ & line1.Handle & """)" & vbCr & "(HandEnt """ & line2.Handle & """)" & vbCr
+    Application.ActiveDocument.SendCommand "_chamfer" & vbCr & "D" & vbCr & frad & vbCr & frad & vbCr & "(HandEnt """ & line1.Handle & """)" & vbCr & "(HandEnt """ & resultpl.Handle & """)" & vbCr
     'Application.ActiveDocument.SendCommand "_fillet" & vbCr & "T" & vbCr & "N" & vbCr & "r" & vbCr & frad & vbCr & "(HandEnt """ & line1.Handle & """)" & vbCr & "(HandEnt """ & resultpl.Handle & """)" & vbCr
     
     Set retLine = selecs.selectLine

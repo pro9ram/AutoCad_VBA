@@ -153,7 +153,7 @@ Public Function load()
     
     Set temp = ThisDrawing.ActiveLayer
     
-    result.Layer = ThisDrawing.ActiveLayer.Name
+    result.Layer = ThisDrawing.ActiveLayer.name
     
     
     
@@ -222,13 +222,5 @@ Private Function getArcBy3P(p1() As Double, p2() As Double, p3() As Double) As A
 
 End Function
 
-
-
-Private Function searchCrossVertext(src As AcadEntity, dst As AcadEntity) As Variant
-
-    Dim size As Integer
-    
-    searchCrossVertext = src.IntersectWith(dst, acExtendOtherEntity)   'find vertex
-    
-End Function
+ 
  
