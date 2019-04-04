@@ -51,11 +51,11 @@ Public Function load()
     
     Dim selecs As New clsSelSets
     
-    selec1.selectPolyline ("Get Polyline 1: ")
+    selec1.selectPolyline ("#Get Polyline 1: ")
     Set newroad = selec1.getEntity
     Set pt1 = selec1.getPoint
     
-    selec2.selectPolyline ("Get Polyline 2: ")
+    selec2.selectPolyline ("#Get Polyline 2: ")
     Set oldroad = selec2.getEntity
     Set pt3 = selec2.getPoint
     
@@ -77,8 +77,8 @@ Public Function load()
     
     ptIntersection = searchCrossVertext(newroad, oldroad)
     
-    newp1 = findVertexAtLine(newroad, retLine)   '아크와 도로(새도로)의 접점 추가
-    newp2 = findVertexAtLine(oldroad, retLine)   '아크와 도로(구도로)의 접점 추가
+    newp1 = findVertexAtLine2(newroad, retLine, pt1)   '아크와 도로(새도로)의 접점 추가
+    newp2 = findVertexAtLine2(oldroad, retLine, pt3)   '아크와 도로(구도로)의 접점 추가
    
    
     np1.initXy newp1(0), newp1(1)

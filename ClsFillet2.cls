@@ -59,15 +59,20 @@ Public Function load()
     
     Dim selecs As New clsSelSets
     
-    selec1.selectPolyline ("Get Polyline 1: ")
+    selec1.selectPolyline ("#Get Polyline 1: ")
     Set newroad = selec1.getEntity
     Set pt1 = selec1.getPoint
     
-    selec2.selectPolyline ("Get Polyline 2: ")
+    
+    selec2.selectPolyline ("#Get Polyline 2: ")
     Set oldroad = selec2.getEntity
     Set pt3 = selec2.getPoint
     
+    Debug.Print "!!! click " & pt3.x & ", " & pt3.y
     
+    'pt3.x = 3914.05231561216
+    'pt3.y = 1998.90660493234
+ 
     ptIntersection = searchCrossVertext(newroad, oldroad)
     
     Set np3 = getNearPoint2(ptIntersection, pt3)
@@ -125,12 +130,12 @@ Public Function load()
     
     
     For i = 0 To UBound(ptIntersection) Step 3
-        addDonutY ptIntersection(i), ptIntersection(i + 1)
+        addDonutY ptIntersection(i), ptIntersection(i + 1)          '!!!!!!!!!!!!!!!!!!!!!!
         
     Next i
     
-    newp1 = findVertex(newroad, fillet)   '아크와 도로(새도로)의 접점 추가
-    newp2 = findVertex(oldroad, fillet)   '아크와 도로(구도로)의 접점 추가
+    newp1 = findVertex2(newroad, fillet, pt1)   '아크와 도로(새도로)의 접점 추가
+    newp2 = findVertex2(oldroad, fillet, pt3)   '아크와 도로(구도로)의 접점 추가
    
    
     np1.initXy newp1(0), newp1(1)
@@ -140,15 +145,24 @@ Public Function load()
     Debug.Print "np1: " & np1.x & ", " & np1.y
     Debug.Print "np2: " & np2.x & ", " & np2.y
     
-    addDonutB np1.x, np1.y
-    addDonutB np2.x, np2.y
+    
+    If np1.x = 0 Or np1.y = 0 Or np2.x = 0 Or np2.y = 0 Then
+        Debug.Print "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+     
+    End If
+    
+    
+    
+    
+    'addDonutA np1.x, np1.y
+    'addDonutA np2.x, np2.y
    
     Set np3 = getFarPoint2(ptIntersection, np2)     '기존도로 아크 접점에서 먼 지점을 찾는다
     
     
     addVertex oldroad, np3.x, np3.y     '기존도로에 접점추가
     
-    addDonutG np3.x, np3.y
+    'addDonutA np3.x, np3.y
      
     
     Debug.Print "cross point created"
@@ -159,7 +173,7 @@ Public Function load()
     
     'addDonut5 np3.x, np3.y
     'addDonut5 np1.x, np1.y
-    Debug.Print "newroad direction processed"
+    Debug.Print "newroad directionuuu processed"
     
     newroadsplit = pr.splitInnerLine(np3, np1)
     'addLine newroadsplit

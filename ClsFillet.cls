@@ -51,14 +51,14 @@ Public Function load()
     
     Dim selecs As New clsSelSets
     
-    selec1.selectPolyline ("Get Polyline 1: ")
+    selec1.selectPolyline ("#Get Polyline 1: ")
     Set newroad = selec1.getEntity
     Set pt1 = selec1.getPoint
     
     ThisDrawing.SetVariable "osmode", 0
-    p2 = ThisDrawing.Utility.getPoint(, "Enter a point2: ")
+    p2 = ThisDrawing.Utility.getPoint(, "#Enter a point2: ")
     
-    selec2.selectPolyline ("Get Polyline 2: ")
+    selec2.selectPolyline ("#Get Polyline 3: ")
     Set oldroad = selec2.getEntity
     Set pt3 = selec2.getPoint
     
@@ -86,8 +86,8 @@ Public Function load()
         
     Next i
     
-    newp1 = findVertex(newroad, fillet)   '아크와 도로(새도로)의 접점 추가
-    newp2 = findVertex(oldroad, fillet)   '아크와 도로(구도로)의 접점 추가
+    newp1 = findVertex2(newroad, fillet, pt1)   '아크와 도로(새도로)의 접점 추가
+    newp2 = findVertex2(oldroad, fillet, pt3)   '아크와 도로(구도로)의 접점 추가
    
    
     np1.initXy newp1(0), newp1(1)
