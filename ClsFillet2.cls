@@ -15,22 +15,28 @@ Private fillet As AcadEntity
 Private ptIntersection As Variant
 
 
+Private np1 As New clsPoint
+Private np2 As New clsPoint
+Private np3 As New clsPoint
+
+
+Private newroadsplit() As Double
+Private oldroadsplit() As Double
+Private filletsplit() As Double
+
+
+
 Public Function load()
 
     Dim retArc As AcadEntity
     Dim tmp As Variant
     
     
-    Dim np1 As New clsPoint
-    Dim np2 As New clsPoint
-    Dim np3 As New clsPoint
+    Dim tmpnewroad As AcadEntity
     
     Dim splitter As New clsSplitter
     Dim pr As New clsPolygonReader
-    
-    Dim newroadsplit() As Double
-    Dim oldroadsplit() As Double
-    Dim filletsplit() As Double
+
     
     Dim merge As New ClsMerger
     Dim resultd() As Double
@@ -52,16 +58,24 @@ Public Function load()
   
     Dim selec1 As New ClsSelEntity
     Dim selec2 As New ClsSelEntity
-    
+    Dim undoPoint As AcadEntity
     
     Dim seler As New ClsSelReal
     Dim frad As Double
     
     Dim selecs As New clsSelSets
     
+    Dim eidx As Integer
+    Dim freezelayer As AcadLayer
+    
     selec1.selectPolyline ("#Get Polyline 1: ")
-    Set newroad = selec1.getEntity
+    Set tmpnewroad = selec1.getEntity
     Set pt1 = selec1.getPoint
+    
+    
+    'newFreezeLayer "zzz_Freeze"
+    Set undoPoint = ThisDrawing.ModelSpace.AddText("편집", selec1.getPointD, 5)
+    'undoPoint.layer = "zzz_Freeze"
     
     
     selec2.selectPolyline ("#Get Polyline 2: ")
@@ -72,10 +86,17 @@ Public Function load()
     
     'pt3.x = 3914.05231561216
     'pt3.y = 1998.90660493234
- 
+    
+    
+    Set newroad = trimPolyline(tmpnewroad)
+    newroad.layer = tmpnewroad.layer
+    tmpnewroad.Delete
+    
     ptIntersection = searchCrossVertext(newroad, oldroad)
     
     Set np3 = getNearPoint2(ptIntersection, pt3)
+    
+    'addDonut5 np3.x, np3.y
     
     
     pr1.init newroad
@@ -118,6 +139,9 @@ Public Function load()
     
     
     Set fillet = arc2line(retArc)  '아크를 라인으로 변경
+    
+    ThisDrawing.SendCommand "sob" & vbCr
+    
     filletsplit = fillet.Coordinates
     
     retArc.Delete
@@ -129,10 +153,9 @@ Public Function load()
     ptIntersection = searchCrossVertext(newroad, oldroad)
     
     
-    For i = 0 To UBound(ptIntersection) Step 3
-        addDonutY ptIntersection(i), ptIntersection(i + 1)          '!!!!!!!!!!!!!!!!!!!!!!
-        
-    Next i
+    'For i = 0 To UBound(ptIntersection) Step 3
+    '    addDonutA ptIntersection(i), ptIntersection(i + 1)          '!!!!!!!!!!!!!!!!!!!!!!
+    'Next i
     
     newp1 = findVertex2(newroad, fillet, pt1)   '아크와 도로(새도로)의 접점 추가
     newp2 = findVertex2(oldroad, fillet, pt3)   '아크와 도로(구도로)의 접점 추가
@@ -146,24 +169,24 @@ Public Function load()
     Debug.Print "np2: " & np2.x & ", " & np2.y
     
     
-    If np1.x = 0 Or np1.y = 0 Or np2.x = 0 Or np2.y = 0 Then
-        Debug.Print "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+    'If np1.x = 0 Or np1.y = 0 Or np2.x = 0 Or np2.y = 0 Then
+    '    Debug.Print "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
      
-    End If
+    'End If
     
     
     
     
-    'addDonutA np1.x, np1.y
-    'addDonutA np2.x, np2.y
+    'addDonut5 np1.x, np1.y
+    'addDonut5 np2.x, np2.y
    
-    Set np3 = getFarPoint2(ptIntersection, np2)     '기존도로 아크 접점에서 먼 지점을 찾는다
+    Set np3 = getFarPoint2Ex(newroad, ptIntersection, np2)     '기존도로 아크 접점에서 먼 지점을 찾는다
     
+    'addDonut5 np3.x, np3.y
     
     addVertex oldroad, np3.x, np3.y     '기존도로에 접점추가
-    
-    'addDonutA np3.x, np3.y
-     
+    addVertex oldroad, np2.x, np2.y
+    addVertex newroad, np1.x, np1.y
     
     Debug.Print "cross point created"
     
@@ -171,12 +194,14 @@ Public Function load()
     pr.setIndexByPoint np1
     pr.checkDirection pt3
     
-    'addDonut5 np3.x, np3.y
-    'addDonut5 np1.x, np1.y
-    Debug.Print "newroad directionuuu processed"
+    Debug.Print "newroad direction processed"
     
-    newroadsplit = pr.splitInnerLine(np3, np1)
-    'addLine newroadsplit
+    
+    sidx = pr.setIndexByPoint(np1)
+    eidx = pr.setEIndexByPoint(np3)
+    
+    newroadsplit = pr.getLongLine2()
+  
  
     Debug.Print "newroad split created"
    
@@ -186,17 +211,31 @@ Public Function load()
     
     Debug.Print "oldroad direction processed"
     
-    oldroadsplit = pr.splitInnerLine(np2, np3)
+    
+    sidx = pr.setIndexByPoint(np2)
+    eidx = pr.setEIndexByPoint(np3)
+    
+    oldroadsplit = pr.getShortLine2()
+    
+    'oldroadsplit = pr.splitInnerLine(np2, np3)
     'addLine oldroadsplit
 
     
     Debug.Print "oldroad split created"
+        
+        
+    checkLastPoint
+    checkCrossPoint
+    
         
     size1 = UBound(newroadsplit)
     size2 = UBound(filletsplit)
     size3 = UBound(oldroadsplit)
     
     merge.setSize size1 + size2 + size3 + 2
+    
+    
+    'ThisDrawing.ModelSpace.AddLightWeightPolyline oldroadsplit
     
     
     merge.add newroadsplit
@@ -209,19 +248,19 @@ Public Function load()
     fillet.Delete
     
     
-    
-    ThisDrawing.SendCommand "sob" & vbCr
-    
     'Set temp = ThisDrawing.ActiveLayer
     
-    orgLayer = newroad.Layer
-    result.Layer = getAddLayerName(orgLayer)
-    newroad.Layer = getDelLayerName(orgLayer)
+    orgLayer = newroad.layer
+    result.layer = getAddLayerName(orgLayer)
+    newroad.layer = getDelLayerName(orgLayer)
     
     If orgLayer Like LYR_ADD & "*" Then
         newroad.Delete
     End If
     
+    
+    
+    undoPoint.Delete
     
     
 End Function
@@ -289,4 +328,139 @@ Private Function getArcBy3P(p1() As Double, p2() As Double, p3() As Double) As A
 
 End Function
 
+
+Function checkLastPoint()
+
+    Dim retvalue() As Double
+    Dim lastx As Double
+    Dim lasty As Double
+    Dim size As Integer
+    Dim dist1 As Double
+    Dim dist2 As Double
+    
+    size = UBound(filletsplit)
+    
+    lastx = filletsplit(size - 1)
+    lasty = filletsplit(size)
+    
+    'addDonutA lastx, lasty
+    'addDonutA np2.x, np2.y
+
+    dist1 = getDistance(np2.x, np2.y, lastx, lasty)
+    
+    lastx = filletsplit(0)
+    lasty = filletsplit(1)
+    
+    dist2 = getDistance(np2.x, np2.y, lastx, lasty)
+    
+    
+    If dist1 <> 0 And dist2 <> 0 Then   '겹치지 않을때
+    
+        If dist1 < 0.1 Then      'dist1 is minvalue
+        
+            filletsplit(size - 1) = np2.x
+            filletsplit(size) = np2.y
+        
+          '  ReDim retvalue(size - 2) As Double
+         '   For i = 0 To size - 2
+        '        retvalue(i) = filletsplit(i + 2)
+       '
+      '      Next i
+        
+            'filletsplit = retvalue
+         
+        ElseIf dist2 < 0.1 Then     ' dist2 is minvalue
+            
+            filletsplit(0) = np2.x
+            filletsplit(1) = np2.y
+        
+    '        ReDim retvalue(size - 2) As Double
+     '       For i = 2 To size
+      '          retvalue(i - 2) = filletsplit(i)
+       '
+        '    Next i
+        
+         '   filletsplit = retvalue
+        
+        
+        End If
+    End If
+     
+
+
+End Function
  
+ 
+Function checkCrossPoint()
+
+
+    Dim tmpfillet As AcadLWPolyline
+    Dim tmpoldroad As AcadLWPolyline
+    Dim intersec As Variant
+    
+    Dim selidx As Integer
+    Dim mindist As Double
+    
+    Dim plreader As New ClsPolylineReader
+    Dim nx As Double
+    Dim ny As Double
+    
+    selidx = -1
+    mindist = 99999
+    
+    Set tmpfillet = ThisDrawing.ModelSpace.AddLightWeightPolyline(filletsplit)
+    Set tmpoldroad = ThisDrawing.ModelSpace.AddLightWeightPolyline(oldroadsplit)
+    
+    intersec = searchCrossVertext(tmpfillet, oldroad)
+    
+    For i = 0 To UBound(intersec) Step 3
+    
+        dist = getDistance(np3.x, np3.y, intersec(i), intersec(i + 1))
+        
+        If dist < mindist Then
+        
+            mindist = dist
+            selidx = i
+        End If
+        
+    Next i
+    
+    
+    If selidx = -1 Then
+        Return
+    End If
+    
+    
+    nx = intersec(selidx)
+    ny = intersec(selidx + 1)
+    
+    'addDonutA nx, ny
+    
+    
+    
+    
+    addVertex tmpfillet, nx, ny
+    addVertex tmpoldroad, nx, ny
+    
+    plreader.init tmpfillet
+    filletsplit = plreader.getLongDDLine(nx, ny)
+    'ThisDrawing.ModelSpace.AddLightWeightPolyline filletsplit
+    
+    plreader.init tmpoldroad
+    oldroadsplit = plreader.getLongDDLine(nx, ny)
+    'ThisDrawing.ModelSpace.AddLightWeightPolyline oldroadsplit
+    
+    addVertex oldroad, nx, ny
+    
+    
+    tmpfillet.Delete
+    tmpoldroad.Delete
+    
+    
+    
+    
+    Debug.Print ""
+    
+    
+    
+End Function

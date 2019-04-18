@@ -25,7 +25,6 @@ Sub createFillet2()
     
     fillet2.load
     
-    
 
 End Sub
 
@@ -80,7 +79,7 @@ End Sub
 Sub createChamferT()
 
     Dim chamferT As New ClsChamferT
-    
+     
     
     ThisDrawing.EndUndoMark
     ThisDrawing.StartUndoMark
@@ -106,6 +105,38 @@ Sub createBridge()
     Dim pp As New ClsBridge
     pp.createBridge
     
+End Sub
+
+Sub showSettingsForm()
+    Dim myUserForm As New frmSettings
+
+    myUserForm.frmSettings_init
+    myUserForm.show
+
+
+End Sub
+
+
+
+Sub splitBoundary()
+
+    Dim token() As String
+
+    ThisDrawing.StartUndoMark
+
+    saveOnLayers
+    hideLayerAll
+    
+    token = getTempSplit2
+    
+    showLayerLike token
+    
+    ThisDrawing.SendCommand "bbc" & vbCr
+    
+    restoreOnLayers
+    
+    ThisDrawing.EndUndoMark
+
 End Sub
 
 
