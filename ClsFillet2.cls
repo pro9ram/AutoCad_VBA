@@ -67,6 +67,7 @@ Public Function load()
     
     Dim eidx As Integer
     Dim freezelayer As AcadLayer
+    Dim ok As Boolean
     
     selec1.selectPolyline ("#Get Polyline 1: ")
     Set tmpnewroad = selec1.getEntity
@@ -74,11 +75,19 @@ Public Function load()
     
     
     'newFreezeLayer "zzz_Freeze"
-    Set undoPoint = ThisDrawing.ModelSpace.AddText("ÆíÁý", selec1.getPointD, 5)
+    Set undoPoint = ThisDrawing.ModelSpace.AddText("UU-U", selec1.getMovePoindD(5), 2)
     'undoPoint.layer = "zzz_Freeze"
     
     
-    selec2.selectPolyline ("#Get Polyline 2: ")
+    ok = selec2.selectPolyline("#Get Polyline 2: ")
+    
+    If ok = False Then
+        undoPoint.Delete
+        End
+    
+    End If
+    
+    
     Set oldroad = selec2.getEntity
     Set pt3 = selec2.getPoint
     
