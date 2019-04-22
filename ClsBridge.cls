@@ -28,12 +28,17 @@ Private tailLEN As Integer
 
 
 
+Private layername As String
+
+
+
+
 Function createBridge()
 
 
     Dim selec1 As New ClsSelEntity
     Dim selec2 As New ClsSelEntity
-    
+    Dim orgent As AcadEntity
     
     Dim pt1 As clsPoint
     Dim pt2 As clsPoint
@@ -41,15 +46,19 @@ Function createBridge()
     Dim p1() As Double
     Dim p2() As Double
     
-    tailLEN = 5
+    Dim temp As String
+    
+    tailLEN = 3
     
     selec1.selectPolyline ("Get Polyline 1: ")
-    Set ent = selec1.getEntity
+    Set orgent = selec1.getEntity
     Set pt1 = selec1.getPoint
 
     selec2.selectPolyline ("Get Polyline 2: ")
-    Set ent = selec2.getEntity
+    Set orgent = selec2.getEntity
     Set pt2 = selec2.getPoint
+    
+    Set ent = orgent.Copy
     
     
     new1d = addVertex2(ent, pt1.x, pt1.y)
@@ -76,6 +85,13 @@ Function createBridge()
     size = (UBound(line.Coordinates) + 1) / 2
     
     line.addVertex size, p2
+    
+    temp = getDefaultBridgeLayer
+    
+    layername = getAddLayerName(temp)
+    line.layer = layername
+    
+    ent.Delete
     
     Debug.Print ""
     
@@ -135,7 +151,7 @@ Public Function addHead() As Double()
     ang = getAngleEx(pts.x, pts.y, ptx.x, ptx.y, ptn.x, ptn.y)
     
     
-    ang = ang - PI * 3 / 4
+    ang = ang - PI * 5 / 4
     
     xx = pts.x + tailLEN * Math.Cos(ang)
     yy = pts.y + tailLEN * Math.Sin(ang)
@@ -181,7 +197,7 @@ Public Function addTail() As Double()
     ang = getAngleEx(ptn.x, ptn.y, ptx.x, ptx.y, pte.x, pte.y)
     
     
-    ang = ang - PI * 1 / 4
+    ang = ang + PI * 1 / 4
     
     xx = pte.x + tailLEN * Math.Cos(ang)
     yy = pte.y + tailLEN * Math.Sin(ang)

@@ -325,7 +325,7 @@ Public Sub testFillet()
     Dim pEntRes1 As PromptEntityResult
     pEntRes1 = ed.getEntity("Select first line to Fillet")
 
-    If pEntRes1.Status <> PromptStatus.OK Then
+    If pEntRes1.Status <> PromptStatus.ok Then
 
         Return
 
@@ -341,7 +341,7 @@ Public Sub testFillet()
     Dim pEntRes2 As PromptEntityResult
     pEntRes2 = ed.getEntity("Select second line to Fillet")
 
-    If pEntRes2.Status <> PromptStatus.OK Then
+    If pEntRes2.Status <> PromptStatus.ok Then
 
         Return
 
@@ -639,4 +639,95 @@ Sub test105()
     '1146072.1709
 End Sub
 
+
+Public Sub test106()
+    Dim Region As Variant
+    Dim Objeto(0) As AcadEntity
+    Dim selEntidad As AcadEntity
+    Dim Solido As Acad3DSolid
+    Dim Punto As Variant
+    Dim Punto2 As Variant
+    Dim Altura As Double
+    Dim Angulo As Double
+    
+    Dim ent1 As AcadEntity
+    Dim ent2 As AcadEntity
+    
+    Dim reg1 As AcadRegion
+    Dim reg2 As AcadRegion
+    Dim reg3 As AcadRegion
+    
+    Dim intent As AcadEntity
+    Dim intent2 As AcadLWPolyline
+    
+    Dim temp As AcadRegion
+    Dim temp2 As AcadRegion
+    Dim ttt As Variant
+    
+    Dim regs() As AcadRegion
+    
+    Dim conv As New ClsConverter
+    
+    
+    Dim ents() As AcadEntity
+    Dim hasRegion As Boolean
+    
+    Altura = 10
+    Angulo = 0
+    
+    
+    Set ent1 = selectPLObj
+    Set ent2 = selectPLObj
+    
+    
+    ReDim ents(0) As AcadEntity
+    Set ents(0) = ent1
+    
+    regs = ThisDrawing.ModelSpace.AddRegion(ents)
+    Set reg1 = regs(0)
+    
+    Set ents(0) = ent2
+    regs = ThisDrawing.ModelSpace.AddRegion(ents)
+    Set reg3 = regs(0)
+    
+    
+    reg3.Boolean acIntersection, reg1       'reg3 intersection
+    
+    
+    Set ents(0) = ent1
+    regs = ThisDrawing.ModelSpace.AddRegion(ents)
+    Set reg1 = regs(0)
+    
+    Set ents(0) = ent2
+    regs = ThisDrawing.ModelSpace.AddRegion(ents)
+    Set reg2 = regs(0)
+    
+    ent1.Delete
+    ent2.Delete
+    
+    reg2.Boolean acSubtraction, reg3
+    
+    
+    
+    expoldeRegion reg2
+    
+    expoldeRegion reg1
+     
+    
+    Debug.Print ""
+    
+ 
+    
+End Sub
+
+
+Sub test110()
+
+    Dim boundary As New clsboundary
+    
+    boundary.selects
+    
+    
+
+End Sub
 

@@ -139,4 +139,29 @@ Sub splitBoundary()
 
 End Sub
 
+Sub splitBoundaryEx()
+    Dim token() As String
+    Dim boundary As New clsboundary
+
+    ThisDrawing.StartUndoMark
+
+    saveOnLayers
+    hideLayerAll
+    
+    token = getTempSplit2
+    
+    showLayerLike token
+    
+    
+    
+    boundary.selects
+    
+    
+    
+    restoreOnLayers
+    
+    ThisDrawing.EndUndoMark
+
+
+End Sub
 
