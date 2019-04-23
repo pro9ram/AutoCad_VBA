@@ -7,10 +7,19 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
+Private tmpnewroad As AcadEntity
+Private tmporgroad As AcadEntity
+Private worklayer As AcadLayer
+
+Private newroadlayername As String
+Private oldroadlayername As String
+
 Private orgLayer As String
 Private oldroad As AcadEntity
 Private newroad As AcadEntity
 Private fillet As AcadEntity
+
+
 
 Private ptIntersection As Variant
 
@@ -32,7 +41,7 @@ Public Function load()
     Dim tmp As Variant
     
     
-    Dim tmpnewroad As AcadEntity
+    
     
     Dim splitter As New clsSplitter
     Dim pr As New clsPolygonReader
@@ -69,37 +78,47 @@ Public Function load()
     Dim freezelayer As AcadLayer
     Dim ok As Boolean
     
+    On Error GoTo EndOfFunction
+    Debug.Print "==================START ================="
+    
     selec1.selectPolyline ("#Get Polyline 1: ")
     Set tmpnewroad = selec1.getEntity
     Set pt1 = selec1.getPoint
     
+    deleteLayer TEMP_LAYER
     
+    newLayer TEMP_LAYER
     'newFreezeLayer "zzz_Freeze"
     Set undoPoint = ThisDrawing.ModelSpace.AddText("UU-U", selec1.getMovePoindD(5), 2)
-    'undoPoint.layer = "zzz_Freeze"
+    undoPoint.layer = TEMP_LAYER
     
     
     ok = selec2.selectPolyline("#Get Polyline 2: ")
     
     If ok = False Then
-        undoPoint.Delete
-        End
+        GoTo EndOfFunction
     
     End If
     
     
-    Set oldroad = selec2.getEntity
+    Set tmporgroad = selec2.getEntity
     Set pt3 = selec2.getPoint
     
     Debug.Print "!!! click " & pt3.x & ", " & pt3.y
     
-    'pt3.x = 3914.05231561216
-    'pt3.y = 1998.90660493234
+    'pt3.x = 1145657.5787626
+    'pt3.y = 1688571.88549874
     
     
     Set newroad = trimPolyline(tmpnewroad)
-    newroad.layer = tmpnewroad.layer
-    tmpnewroad.Delete
+    newroadlayername = tmpnewroad.layer
+    newroad.layer = TEMP_LAYER 'tmpnewroad.layer
+    
+    Set oldroad = trimPolyline(tmporgroad)
+    oldroadlayername = tmporgroad.layer
+    oldroad.layer = TEMP_LAYER 'tmpnewroad.layer
+    
+    
     
     ptIntersection = searchCrossVertext(newroad, oldroad)
     
@@ -110,15 +129,16 @@ Public Function load()
     
     pr1.init newroad
     Set line1 = pr1.getLine(pt1)
+    line1.layer = TEMP_LAYER
     
      
     pr2.init oldroad
     Set line2 = pr2.getLine(pt3)
-    
+    line2.layer = TEMP_LAYER
      
     
     Set resultpl = getShortestLine(line2, pt3, np3)
-    
+    resultpl.layer = TEMP_LAYER
     
     frad = seler.selectFilletRadius
     
@@ -127,6 +147,7 @@ Public Function load()
     
     
     Set retArc = selecs.selectArc
+    retArc.layer = TEMP_LAYER
     
     'Set retArc = selectArcObj
     
@@ -148,6 +169,7 @@ Public Function load()
     
     
     Set fillet = arc2line(retArc)  '아크를 라인으로 변경
+    fillet.layer = TEMP_LAYER
     
     ThisDrawing.SendCommand "sob" & vbCr
     
@@ -253,13 +275,14 @@ Public Function load()
     
     
     Set result = addLine(merge.getMerged)
+    result.layer = TEMP_LAYER
     'newroad.Delete
     fillet.Delete
     
     
     'Set temp = ThisDrawing.ActiveLayer
     
-    orgLayer = newroad.layer
+    orgLayer = newroadlayername
     result.layer = getAddLayerName(orgLayer)
     newroad.layer = getDelLayerName(orgLayer)
     
@@ -269,7 +292,20 @@ Public Function load()
     
     
     
-    undoPoint.Delete
+    'undoPoint.Delete
+    tmpnewroad.Delete
+    tmporgroad.Delete
+    
+    oldroad.layer = oldroadlayername
+    
+EndOfFunction:
+    
+    
+    deleteLayer TEMP_LAYER
+    
+
+    Debug.Print ""
+    
     
     
 End Function
@@ -365,34 +401,28 @@ Function checkLastPoint()
     
     If dist1 <> 0 And dist2 <> 0 Then   '겹치지 않을때
     
-        If dist1 < 0.1 Then      'dist1 is minvalue
-        
+        If dist1 < dist2 Then
             filletsplit(size - 1) = np2.x
             filletsplit(size) = np2.y
         
-          '  ReDim retvalue(size - 2) As Double
-         '   For i = 0 To size - 2
-        '        retvalue(i) = filletsplit(i + 2)
-       '
-      '      Next i
-        
-            'filletsplit = retvalue
-         
-        ElseIf dist2 < 0.1 Then     ' dist2 is minvalue
-            
+        Else
             filletsplit(0) = np2.x
             filletsplit(1) = np2.y
         
-    '        ReDim retvalue(size - 2) As Double
-     '       For i = 2 To size
-      '          retvalue(i - 2) = filletsplit(i)
-       '
-        '    Next i
-        
-         '   filletsplit = retvalue
-        
-        
         End If
+        
+    
+        'If dist1 < 0.1 Then      'dist1 is minvalue
+        '
+        '    filletsplit(size - 1) = np2.x
+        '    filletsplit(size) = np2.y
+        '
+        'ElseIf dist2 < 0.1 Then     ' dist2 is minvalue
+        '
+        '    filletsplit(0) = np2.x
+        '    filletsplit(1) = np2.y
+        '
+        'End If
     End If
      
 
@@ -411,8 +441,12 @@ Function checkCrossPoint()
     Dim mindist As Double
     
     Dim plreader As New ClsPolylineReader
+    
+    Dim x, y As Double
     Dim nx As Double
     Dim ny As Double
+    
+    Dim b1, b2 As Boolean
     
     selidx = -1
     mindist = 99999
@@ -422,16 +456,31 @@ Function checkCrossPoint()
     
     intersec = searchCrossVertext(tmpfillet, oldroad)
     
+    'addDonut5 np3.x, np3.y
+    
     For i = 0 To UBound(intersec) Step 3
     
-        dist = getDistance(np3.x, np3.y, intersec(i), intersec(i + 1))
+        x = intersec(i)
+        y = intersec(i + 1)
+    
+        b1 = isContains(tmpfillet, CDbl(x), CDbl(y))
+        b2 = isContains(tmpoldroad, CDbl(x), CDbl(y))
         
-        If dist < mindist Then
+        If b1 = False Or b2 = False Then
+            
+        Else
         
-            mindist = dist
-            selidx = i
+            dist = getDistance(np3.x, np3.y, intersec(i), intersec(i + 1))
+            
+            'addDonutA intersec(i), intersec(i + 1)
+            
+            If dist < mindist Then
+            
+                mindist = dist
+                selidx = i
+            End If
+        
         End If
-        
     Next i
     
     
@@ -473,3 +522,5 @@ Function checkCrossPoint()
     
     
 End Function
+
+

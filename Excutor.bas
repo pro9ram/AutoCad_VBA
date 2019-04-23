@@ -29,6 +29,12 @@ Sub createFillet2()
 End Sub
 
 
+Sub deleteWorkingStuff()
+
+    deleteLayer (TEMP_LAYER)
+
+End Sub
+
 
 
 Sub createFilletT()
@@ -141,7 +147,7 @@ End Sub
 
 Sub splitBoundaryEx()
     Dim token() As String
-    Dim boundary As New clsboundary
+    Dim boundary As New ClsBoundary
 
     ThisDrawing.StartUndoMark
 
