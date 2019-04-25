@@ -74,10 +74,13 @@ Public Function load()
     
     Dim eidx As Integer
     Dim freezelayer As AcadLayer
+    Dim okcnt As Integer
     Dim ok As Boolean
     
     On Error GoTo EndOfFunction
     Debug.Print "==================START ================="
+    
+    okcnt = 0
     
     selec1.selectPolyline ("#Get Polyline 1: ")
     Set tmpnewroad = selec1.getEntity
@@ -119,29 +122,31 @@ Public Function load()
     'oldroad.layer = TEMP_LAYER 'tmpnewroad.layer
     oldroad.layer = tmpnewroad.layer
     
-    
-    
     ptIntersection = searchCrossVertext(newroad, oldroad)
-    
-    Set np3 = getNearPoint2(ptIntersection, pt3)
-    
-    'addDonut5 np3.x, np3.y
     
     For i = 0 To UBound(ptIntersection) Step 3
         'addDonutA ptIntersection(i), ptIntersection(i + 1)          '!!!!!!!!!!!!!!!!!!!!!!
         
         ok = isContains(newroad, CDbl(ptIntersection(i)), CDbl(ptIntersection(i + 1)))
-        If ok = False Then
-            Exit For
+        If ok = True Then
+            okcnt = okcnt + 1
         End If
     Next i
     
     
-    If ok = False Then
-        ThisDrawing.Utility.prompt "인접부분 확인바랍니다"
+    If okcnt < 2 Then
+        ThisDrawing.Utility.prompt "인접부분 확인바랍니다 - 접점: " & okcnt
+        oldroad.Delete
+        newroad.Delete
         GoTo EndOfFunction
     
     End If
+    
+    
+    Set np3 = getNearPoint2(ptIntersection, pt3)
+    
+    'addDonut5 np3.x, np3.y
+    
     
     pr1.init newroad
     Set line1 = pr1.getLine(pt1)
@@ -238,6 +243,12 @@ Public Function load()
     addVertex oldroad, np3.x, np3.y     '기존도로에 접점추가
     addVertex oldroad, np2.x, np2.y
     addVertex newroad, np1.x, np1.y
+    
+    
+    'addDonutA np1.x, np1.y
+    'addDonutA np2.x, np2.y
+    'addDonutA np3.x, np3.y
+   
     
     Debug.Print "cross point created"
     

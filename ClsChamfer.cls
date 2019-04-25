@@ -44,38 +44,69 @@ Public Function load()
     
     Dim selec1 As New ClsSelEntity
     Dim selec2 As New ClsSelEntity
-    
+    Dim undoPoint As AcadEntity
     
     Dim seler As New ClsSelReal
     Dim frad As Double
     
     Dim selecs As New clsSelSets
     
-    selec1.selectPolyline ("#Get Polyline 1: ")
+    Dim okcnt As Integer
+    Dim ok As Boolean
+    
+    okcnt = 0
+    
+    ok = selec1.selectPolyline("#Get Polyline 1: ")
     Set newroad = selec1.getEntity
     Set pt1 = selec1.getPoint
     
-    selec2.selectPolyline ("#Get Polyline 2: ")
+    If ok = False Then
+        ThisDrawing.Utility.prompt "선택에 오류가 발생했습니다."
+        GoTo EndOfFunction
+    
+    End If
+    
+    Set undoPoint = ThisDrawing.ModelSpace.AddText("UU-U", selec1.getMovePoindD(5), 2)
+    
+    ok = selec2.selectPolyline("#Get Polyline 2: ")
     Set oldroad = selec2.getEntity
     Set pt3 = selec2.getPoint
     
-
+        
+    If ok = False Then
+        ThisDrawing.Utility.prompt "선택에 오류가 발생했습니다."
+        GoTo EndOfFunction
+    
+    End If
+    
+    
+    ptIntersection = searchCrossVertext(newroad, oldroad)
+    
+    For i = 0 To UBound(ptIntersection) Step 3
+        'addDonutA ptIntersection(i), ptIntersection(i + 1)          '!!!!!!!!!!!!!!!!!!!!!!
+        
+        ok = isContains(newroad, CDbl(ptIntersection(i)), CDbl(ptIntersection(i + 1)))
+        If ok = True Then
+            okcnt = okcnt + 1
+        End If
+    Next i
+    
+    
+    If okcnt < 2 Then
+        ThisDrawing.Utility.prompt "인접부분 확인바랍니다 - 접점: " & okcnt
+        GoTo EndOfFunction
+    
+    End If
+    
     
     sp(0) = pt1.x
     sp(1) = pt1.y
     ep(0) = pt3.x
     ep(1) = pt3.y
     
-    
     Set retLine = ThisDrawing.ModelSpace.addLine(sp, ep)
     
-    'retArc.Delete
-    
-    
-    Debug.Print "fillet created"
-    
-    
-    ptIntersection = searchCrossVertext(newroad, oldroad)
+    Debug.Print "chamfer created"
     
     newp1 = findVertexAtLine2(newroad, retLine, pt1)   '아크와 도로(새도로)의 접점 추가
     newp2 = findVertexAtLine2(oldroad, retLine, pt3)   '아크와 도로(구도로)의 접점 추가
@@ -94,7 +125,7 @@ Public Function load()
     additionsplit(2) = np2.x
     additionsplit(3) = np2.y
    
-    Set np3 = getFarPoint2(ptIntersection, np2)     '기존도로 아크 접점에서 먼 지점을 찾는다
+    Set np3 = getFarPoint2Ex(newroad, ptIntersection, np2)     '기존도로 아크 접점에서 먼 지점을 찾는다
     
     
     addVertex oldroad, np3.x, np3.y     '기존도로에 접점추가
@@ -111,7 +142,11 @@ Public Function load()
     'addDonut5 np1.x, np1.y
     Debug.Print "newroad direction processed"
     
-    newroadsplit = pr.splitInnerLine(np3, np1)
+    sidx = pr.setIndexByPoint(np1)
+    eidx = pr.setEIndexByPoint(np3)
+    
+    newroadsplit = pr.getLongLine2()
+    'newroadsplit = pr.splitInnerLine(np3, np1)
     'addLine newroadsplit
     
     Debug.Print "newroad split created"
@@ -122,7 +157,11 @@ Public Function load()
     
     Debug.Print "oldroad direction processed"
     
-    oldroadsplit = pr.splitInnerLine(np2, np3)
+    sidx = pr.setIndexByPoint(np2)
+    eidx = pr.setEIndexByPoint(np3)
+    
+    oldroadsplit = pr.getShortLine2()
+    'oldroadsplit = pr.splitInnerLine(np2, np3)
     'addLine oldroadsplit
     
     
@@ -156,6 +195,9 @@ Public Function load()
         newroad.Delete
     End If
     
+EndOfFunction:
+    undoPoint.Delete
+    Debug.Print "DONE"
     
 End Function
  
