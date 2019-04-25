@@ -142,14 +142,15 @@ Public Function load()
     
     
     Set result = addLine(merge.getMerged)
+    result.Closed = True
     'newroad.Delete
     retLine.Delete
     
     'ThisDrawing.SendCommand "sob" & vbCr
     
-    orgLayer = newroad.Layer
-    result.Layer = getAddLayerName(orgLayer)
-    newroad.Layer = getDelLayerName(orgLayer)
+    orgLayer = newroad.layer
+    result.layer = getAddLayerName(orgLayer)
+    newroad.layer = getDelLayerName(orgLayer)
     
     If orgLayer Like LYR_ADD & "*" Then
         newroad.Delete

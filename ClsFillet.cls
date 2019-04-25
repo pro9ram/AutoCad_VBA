@@ -129,6 +129,10 @@ Public Function load()
     
     Debug.Print "oldroad direction processed"
     
+    addDonutA pt1.x, pt1.y
+    addDonutA np2.x, np2.y
+    addDonutA np3.x, np3.y
+    
     oldroadsplit = pr.splitInnerLine(np2, np3)
     'addLine oldroadsplit
     
@@ -157,9 +161,9 @@ Public Function load()
     
     'Set temp = ThisDrawing.ActiveLayer
     
-    orgLayer = newroad.Layer
-    result.Layer = getAddLayerName(orgLayer)
-    newroad.Layer = getDelLayerName(orgLayer)
+    orgLayer = newroad.layer
+    result.layer = getAddLayerName(orgLayer)
+    newroad.layer = getDelLayerName(orgLayer)
     
     If orgLayer Like LYR_ADD & "*" Then
         newroad.Delete
