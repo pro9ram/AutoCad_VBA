@@ -196,7 +196,9 @@ Public Function load()
     End If
     
 EndOfFunction:
-    undoPoint.Delete
+    If undoPoint Is Nothing = False Then
+        undoPoint.Delete
+    End If
     Debug.Print "DONE"
     
 End Function

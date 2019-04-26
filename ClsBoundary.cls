@@ -117,16 +117,48 @@ Private Function expoldeRegion(reg As Variant, lyrname As String) As Boolean
     Dim Punto As Variant
     Dim ent As AcadLWPolyline
     Dim ret As Boolean
+    Dim arr As Variant
+    Dim subreg As Variant
 
     ret = False
-    has = hasArc(reg)
     
-    If has = False Then
+    has = hasSubRegion(reg)
     
-        Set ent = conv.reg2polyline(reg)
-        ent.layer = lyrname
+    If has = True Then
+    
+        arr = reg.Explode
+        size = UBound(arr)
+        
+        For i = 0 To size
+            
+            Set subreg = arr(i)
+            
+            has = hasArc(subreg)
+        
+            If has = False Then
+            
+                Set ent = conv.reg2polyline(subreg)
+                ent.layer = lyrname
+                subreg.Delete
+                ret = True
+            End If
+        
+        Next i
+        
         reg.Delete
-        ret = True
+    
+    
+    Else
+    
+        has = hasArc(reg)
+        
+        If has = False Then
+        
+            Set ent = conv.reg2polyline(reg)
+            ent.layer = lyrname
+            reg.Delete
+            ret = True
+        End If
     End If
     
 
@@ -158,14 +190,14 @@ Private Function hasSubRegion(reg As Variant) As Boolean
     Dim size As Integer
     Dim ret As Boolean
 
-    ret = True
+    ret = False
 
     arr = reg.Explode
     size = UBound(arr)
     
     If size > 0 Then
-        If TypeOf arr(0) Is AcadLine Then
-            ret = False
+        If TypeOf arr(0) Is AcadRegion Then
+            ret = True
         
         End If
     End If

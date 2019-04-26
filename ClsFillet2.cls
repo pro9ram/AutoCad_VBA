@@ -82,9 +82,17 @@ Public Function load()
     
     okcnt = 0
     
-    selec1.selectPolyline ("#Get Polyline 1: ")
+    ok = selec1.selectPolyline("#Get Polyline 1: ")
+    
+    If ok = False Then
+        ThisDrawing.Utility.prompt "선택에 오류가 발생했습니다."
+        GoTo EndOfFunction
+    
+    End If
+    
     Set tmpnewroad = selec1.getEntity
     Set pt1 = selec1.getPoint
+    
     
     'deleteLayer TEMP_LAYER
     
@@ -338,11 +346,13 @@ Public Function load()
     
 EndOfFunction:
     
-    undoPoint.Delete
+    If undoPoint Is Nothing = False Then
+        undoPoint.Delete
+    End If
     'deleteLayer TEMP_LAYER
     
 
-    Debug.Print ""; sssssla
+    Debug.Print ""
     
     
     

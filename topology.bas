@@ -303,7 +303,7 @@ Function isContains(src As AcadEntity, vx As Double, vy As Double) As Boolean
     ddd = src.Coordinates
    
     
-    For i = 0 To UBound(ddd) - 1 Step 3
+    For i = 0 To UBound(ddd) - 1 Step 2
     
         x = ddd(i)
         y = ddd(i + 1)
@@ -459,6 +459,136 @@ Function trimPolyline(ent As AcadLWPolyline) As AcadLWPolyline
 
 End Function
 
+
+Function polyline2lwpolyline(src As AcadEntity) As AcadLWPolyline
+
+
+    Dim size As Integer
+    Dim ret As AcadLWPolyline
+    Dim ddd() As Double
+    Dim ddd2() As Double
+    Dim idx As Integer
+    
+    ddd = src.Coordinates
+    size = UBound(ddd)
+    
+    
+    ReDim ddd2(size * 2 / 3) As Double
+    
+    For i = 0 To size Step 3
+    
+        ddd2(idx) = ddd(i)
+        ddd2(idx + 1) = ddd(i + 1)
+        
+        idx = idx + 2
+    
+    Next i
+    
+    Set ret = ThisDrawing.ModelSpace.AddLightWeightPolyline(ddd2)
+    If ret.Closed = False Then
+        ret.Closed = True
+    End If
+    
+    
+
+End Function
+
+
+Function d3ToPolyline(ddd As Variant) As AcadLWPolyline
+
+
+    Dim size As Integer
+    Dim ret As AcadLWPolyline
+    Dim ddd2() As Double
+    Dim idx As Integer
+    
+     
+    size = UBound(ddd)
+    
+    
+    ReDim ddd2(size * 2 / 3) As Double
+    
+    For i = 0 To size Step 3
+    
+        ddd2(idx) = ddd(i)
+        ddd2(idx + 1) = ddd(i + 1)
+        
+        idx = idx + 2
+    
+    Next i
+
+    Set ret = ThisDrawing.ModelSpace.AddLightWeightPolyline(ddd2)
+    If ret.Closed = False Then
+        ret.Closed = True
+    End If
+    
+    Set d3ToPolyline = ret
+    
+
+End Function
+
+
+
+Function expoldeRegion(reg As Variant)
+
+    Dim has As Boolean
+    Dim conv As New ClsConverter
+    Dim Punto As Variant
+
+    has = hasSubRegion(reg)
+    
+    If has = True Then
+    
+        Punto = reg.Explode
+        reg.Delete
+        
+        For i = 0 To UBound(Punto)
+            conv.reg2polyline Punto(i)
+        Next i
+        
+        For i = 0 To UBound(Punto)
+            Punto(i).Delete
+        Next i
+    
+    Else
+    
+        conv.reg2polyline reg
+        reg.Delete
+    
+    End If
+    
+
+
+End Function
+
+
+Function hasSubRegion(reg As Variant) As Boolean
+
+    Dim arr As Variant
+    Dim size As Integer
+    Dim ret As Boolean
+
+    ret = True
+
+    arr = reg.Explode
+    size = UBound(arr)
+    
+    If size > 0 Then
+        If TypeOf arr(0) Is AcadLine Then
+            ret = False
+        
+        End If
+    End If
+    
+    
+    For i = 0 To size
+        arr(i).Delete
+    
+    Next
+    
+    hasSubRegion = ret
+
+End Function
 
 
 Sub topologyTest()
