@@ -14,6 +14,8 @@ Private fillet As AcadEntity
 
 Private ptIntersection As Variant
 
+Private isEdited As Boolean
+
 
 Public Function load()
 
@@ -61,6 +63,7 @@ Public Function load()
     Dim okcnt As Integer
     Dim ok As Boolean
     
+    isEdited = False
     okcnt = 0
     
     ok = selec1.selectPolyline("#Get Polyline 1: ")
@@ -87,6 +90,8 @@ Public Function load()
     
     End If
     
+    
+    isEdited = hasProperties(newroad)
     
     ptIntersection = searchCrossVertext(newroad, oldroad)
     
@@ -166,7 +171,7 @@ Public Function load()
     additionsplit(3) = np2.y
     
    
-    Set np3 = getFarPoint2(ptIntersection, np2)     '기존도로 아크 접점에서 먼 지점을 찾는다
+    Set np3 = getFarPoint2Ex(newroad, ptIntersection, np1)     '기존도로 아크 접점에서 먼 지점을 찾는다
     
     
     addVertex oldroad, np3.x, np3.y     '기존도로에 접점추가
@@ -231,7 +236,7 @@ Public Function load()
     result.layer = getAddLayerName(orgLayer)
     newroad.layer = getDelLayerName(orgLayer)
     
-    If orgLayer Like LYR_ADD & "*" Then
+    If (orgLayer Like LYR_ADD & "*") Or isEdited = False Then
         newroad.Delete
     End If
     

@@ -1,4 +1,26 @@
 Attribute VB_Name = "ModProp"
+Function hasProperties(ent As AcadEntity) As Boolean
+
+    Dim adic As AcadDictionary
+    Dim ret As Boolean
+    
+    
+    ret = ent.HasExtensionDictionary
+    
+    If ret = True Then
+    
+        Set adic = ent.GetExtensionDictionary()
+        If adic.count <= 0 Then
+            ret = False
+        End If
+    
+    End If
+    
+    hasProperties = ret
+    
+
+End Function
+
 Sub show_properties()
 
     Dim ent As AcadEntity
@@ -27,51 +49,54 @@ Sub show_properties()
     Set tbls = amap.Projects(ThisDrawing).ODTables
     
     
-    layername = ent.Layer
+    layername = ent.layer
     Debug.Print ent.ObjectName & " " & ent.ObjectID & " " & ent.OwnerID & " " & ent.PlotStyleName
     Debug.Print " " & ent.HasExtensionDictionary
     
     
     Set adic = ent.GetExtensionDictionary()
-    Set vvv = adic.Item(0)
+    If adic.count > 0 Then
     
+        Set vvv = adic.Item(0)
         
-    Dim xdataOut As Variant
-    Dim xtypeOut As Variant
-    ent.GetXData "", xtypeOut, xdataOut
-    
-    layername = "bg_rd_walk_l"
-    
-    For Each tbl In tbls
             
+        Dim xdataOut As Variant
+        Dim xtypeOut As Variant
+        ent.GetXData "", xtypeOut, xdataOut
+        
+        'layername = "bg_rd_walk_l"
+        
+        For Each tbl In tbls
+                
 Try:
-        On Error GoTo Catch
-        
-        Set odrecrds = tbl.GetODRecords
-        odrecrds.init ent, True, False
-        
-        If odrecrds.IsDone = False Then
-            Set odrecrd = odrecrds.record
-            Set fieldds = tbl.ODFieldDefs
+            On Error GoTo Catch
             
-            count = fieldds.count
+            Set odrecrds = tbl.GetODRecords
+            odrecrds.init ent, True, False
             
-            
-            For i = 0 To count - 1
-                Set fieldd = fieldds.Item(i)
-                Set fieldv = odrecrd.Item(i)
-            
-                Debug.Print i & ")" & fieldd.name & ": " & fieldv.Value
-            
-            Next
-        End If
-      
-        GoTo Finally
+            If odrecrds.IsDone = False Then
+                Set odrecrd = odrecrds.record
+                Set fieldds = tbl.ODFieldDefs
+                
+                count = fieldds.count
+                
+                
+                For i = 0 To count - 1
+                    Set fieldd = fieldds.Item(i)
+                    Set fieldv = odrecrd.Item(i)
+                
+                    Debug.Print i & ")" & fieldd.name & ": " & fieldv.Value
+                
+                Next
+            End If
+          
+            GoTo Finally
 Catch:
-
+    
 Finally:
-        
-    Next
+            
+        Next
+    End If
     
 End Sub
 
@@ -103,7 +128,7 @@ Sub show_properties_old()
     Set tbls = amap.Projects(ThisDrawing).ODTables
     
     
-    layername = ent.Layer
+    layername = ent.layer
     Debug.Print ent.ObjectName & " " & ent.ObjectID & " " & ent.OwnerID & " " & ent.PlotStyleName
     Debug.Print " " & ent.HasExtensionDictionary
     

@@ -67,6 +67,9 @@ Function getFarPoint2(list As Variant, pt As clsPoint) As clsPoint
 End Function
 
 
+
+
+
 'intersectwith에서 잘못된점이 있기때문에 생성
 Function getFarPoint2Ex(ent As AcadEntity, list As Variant, pt As clsPoint) As clsPoint
 
@@ -76,9 +79,23 @@ Function getFarPoint2Ex(ent As AcadEntity, list As Variant, pt As clsPoint) As c
     Dim x As Double
     Dim y As Double
     Dim exists As Boolean
+    
+    Dim cpt As New clsPoint
+    Dim newpr As New clsPolygonReader
+    
+    Dim ddd() As Double
+    Dim d1 As Double
+    Dim d2 As Double
+    
+    Dim tmp As AcadLWPolyline
+    
     max = 0
     
      
+    newpr.init ent
+    newpr.setIndexByPoint pt
+    
+    'addDonut5 pt.x, pt.y
     
     For i = 0 To UBound(list) Step 3
     
@@ -90,11 +107,30 @@ Function getFarPoint2Ex(ent As AcadEntity, list As Variant, pt As clsPoint) As c
         exists = isContains(ent, x, y)
     
         If exists = True Then
-    
+            
             p.initXy x, y 'x, y
+            'addDonutA x, y
+            
+            newpr.setEIndexByPoint p
+            
+            ddd = newpr.getLongLine2
+            'Set tmp = ThisDrawing.ModelSpace.AddLightWeightPolyline(ddd)
+            d1 = getArrayDistance(ddd)
+            
+            ddd = newpr.getShortLine2
+            'Set tmp = ThisDrawing.ModelSpace.AddLightWeightPolyline(ddd)
+            d2 = getArrayDistance(ddd)
             
             
-            dd = pt.distance(p)
+            If d1 > d2 Then
+                dd = d2
+            Else
+                dd = d1
+            End If
+            
+            'Debug.Print ">>>>>> " & d1 & ", " & d2 & ">>>>> " & dd
+            
+            'dd = pt.distance(p)
             
             If dd > max And dd < FAR_OVER Then
                 max = dd
@@ -298,6 +334,7 @@ Function isContains(src As AcadEntity, vx As Double, vy As Double) As Boolean
     Dim ddd() As Double
     Dim x, y As Double
     Dim ret As Boolean
+    Dim b As Boolean
     
     ret = False
     ddd = src.Coordinates
@@ -311,7 +348,10 @@ Function isContains(src As AcadEntity, vx As Double, vy As Double) As Boolean
         
         'addDonut5 x, y
         
-        If x = vx And y = vy Then
+        b = isEqualsDouble(CDbl(x), y, vx, vy)
+        
+        'If x = vx And y = vy Then
+        If b = True Then
             ret = True
             Exit For
         End If
@@ -589,6 +629,55 @@ Function hasSubRegion(reg As Variant) As Boolean
     hasSubRegion = ret
 
 End Function
+
+
+Function sublwpolyline(sx As Double, sy As Double, ent As AcadLWPolyline) As AcadLWPolyline
+
+
+    Dim ddd() As Double
+    Dim size As Integer
+    Dim sidx As Integer
+    Dim x, y As Double
+    
+    Dim ddd2() As Double
+    
+    Dim retent As AcadLWPolyline
+    
+    ddd = ent.Coordinates
+    size = UBound(ddd)
+    
+    sidx = 0
+    
+    For i = 0 To size Step 2
+        x = ddd(i)
+        y = ddd(i + 1)
+        
+        If sx = x And sy = y Then
+            Exit For
+        End If
+    
+        sidx = sidx + 2
+    Next i
+    
+    
+    ReDim ddd2(size - sidx) As Double
+    
+    For i = sidx To size Step 2
+        ddd2(i - sidx) = ddd(i)
+        ddd2(i - sidx + 1) = ddd(i + 1)
+        
+    Next i
+    
+    Set retent = ThisDrawing.ModelSpace.AddLightWeightPolyline(ddd2)
+    
+    
+    Set sublwpolyline = retent
+
+
+End Function
+
+
+
 
 
 Sub topologyTest()

@@ -133,7 +133,7 @@ Sub splitBoundary()
     saveOnLayers
     hideLayerAll
     
-    token = getTempSplit2
+    token = getDefaultLayerOn
     
     showLayerLike token
     
@@ -154,7 +154,7 @@ Sub splitBoundaryEx()
     saveOnLayers
     hideLayerAll
     
-    token = getTempSplit2
+    token = getDefaultLayerOn
     
     showLayerLike token
     
